@@ -42,3 +42,7 @@ Notice the tree format should be:
 
 Or you may change the macro addDtoTree to adapt to the
 format of your tree
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+MELA.C contains also a macro ("calculateAngles") which computes the 5 angles starting from the 4-momenta of the Higgs, the 2 Zeds and the 4 Leptons
