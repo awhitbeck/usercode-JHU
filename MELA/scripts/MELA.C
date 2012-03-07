@@ -17,6 +17,7 @@
 #include "TH3F.h"
 #include "TF1.h"
 #include "TString.h"
+#include "TLorentzVector.h"
 #include <sstream>
 #include <string>
 #include <vector>
@@ -169,8 +170,10 @@ void addDtoTree(char* inputFile){
   TTree* sigTree;
     if(sigFile)
         sigTree = (TTree*) sigFile->Get("angles");
-    if(!sigTree)
-        return;
+    if(!sigTree){
+      cout<<"ERROR could not find the tree!"<<endl;
+      return;
+    }
 
   TFile* newFile = new TFile(outputFileName,"RECREATE");
   TTree* newTree = new TTree("newTree","angles"); 
