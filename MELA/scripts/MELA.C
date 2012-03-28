@@ -114,7 +114,7 @@ pair<double,double> likelihoodDiscriminant (double mZZ, double m1, double m2, do
   RooRealVar* costheta1_rrv = new RooRealVar("costheta1","cos#theta_{1}",-1,1);  
   RooRealVar* costheta2_rrv = new RooRealVar("costheta2","cos#theta_{2}",-1,1);
   RooRealVar* phi_rrv= new RooRealVar("phi","#Phi",-3.1415,3.1415);
-  RooRealVar* mzz_rrv= new RooRealVar("mzz","mZZ",110,180);
+  RooRealVar* mzz_rrv= new RooRealVar("mzz","mZZ",100,180);
   AngularPdfFactory *SMHiggs = new AngularPdfFactory(z1mass_rrv,z2mass_rrv,costheta1_rrv,costheta2_rrv,phi_rrv,mzz_rrv);
   SMHiggs->makeSMHiggs();
   SMHiggs->makeParamsConst(true);
@@ -140,7 +140,7 @@ pair<double,double> likelihoodDiscriminant (double mZZ, double m1, double m2, do
   char* varName[6]={"m1/m2","costhetastar","costheta1","coshteta2","phi","phi1"};
   for(int iVar=0; iVar<6; iVar++){
 
-    if(P[iVar]==0 && (m1+m2)<mZZ && m2>20 && mZZ>110 && mZZ<180)
+    if(P[iVar]==0 && (m1+m2)<mZZ && m2>12 && mZZ>100 && mZZ<180)
 	cout << " uh oh... Probability of " << varName[iVar] << " is zero." << endl;
   }
   // - - - - - - - - - - - - - - - - - - - - - 
