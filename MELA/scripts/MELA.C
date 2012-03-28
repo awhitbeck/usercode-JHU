@@ -204,7 +204,7 @@ void addDtoTree(char* inputFile){
 
     sigTree->GetEntry(iEvt);
 
-    if(mzz>110. && mzz<180. && m2>20) 
+    if(mzz>100. && mzz<180. && m2>12) 
       {
 
       //MELA LD
