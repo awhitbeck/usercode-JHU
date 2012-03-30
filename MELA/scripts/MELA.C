@@ -1,44 +1,32 @@
-#include "RooDataSet.h"
 #include "RooRealVar.h"
-#include "RooDataSet.h"
-#include "RooDataHist.h"
-#include "RooHistPdf.h"
-#include "RooGaussian.h"
-#include "TCanvas.h"
-#include "TString.h"
-#include "TAxis.h"
-#include "RooPlot.h"
 #include "TFile.h"
-#include "TLegend.h"
-#include "TGraphErrors.h"
 #include "TChain.h"
 #include "TH1F.h"
 #include "TH2F.h"
 #include "TH3F.h"
 #include "TF1.h"
-#include "TString.h"
 #include "TLorentzVector.h"
+#include "TCanvas.h"
 #include <sstream>
-#include <string>
 #include <vector>
 #include "../src/AngularPdfFactory.cc"
-#include "TMVA/Tools.h"
-#include "TMVA/Reader.h"
-#include "TMVA/MethodCuts.h"
+#include "../PDFs/RooqqZZ_JHU.h"
 
 /*
 //be sure to compile/load everything:
  gSystem->AddIncludePath("-I/$ROOFITSYS/include/");
 .L ../PDFs/RooXZsZs_5D.cxx+
 .L ../src/AngularPdfFactory.cc+
+.L ../PDFs/RooqqZZ_JHU.cxx+
 .L MELA.C+
 */
 
 using namespace RooFit ;
 
- TFile *f = new TFile("../datafiles/my8DTemplateNotNorm.root","READ");
-
 vector<double> my8DTemplate(bool normalized,double mZZ, double m1, double m2, double costhetastar, double costheta1, double costheta2, double phi, double phi1){
+
+  TFile *f = new TFile("../datafiles/my8DTemplateNotNorm.root","READ");
+
   //read from a file the 3D and 2D template
   TH1F *h_mzz= (TH1F*)(f->Get("h_mzz"));
   TH3F *h_mzzm1m2= (TH3F*)(f->Get("h_mzzm1m2"));
@@ -99,6 +87,7 @@ vector<double> my8DTemplate(bool normalized,double mZZ, double m1, double m2, do
   P_norm.push_back(Pmzzphi_norm);
   P_norm.push_back(Pmzzphi1_norm);
 
+  delete f;
   
   if(normalized)
     return P_norm;
@@ -106,6 +95,7 @@ vector<double> my8DTemplate(bool normalized,double mZZ, double m1, double m2, do
     return P;
 }
 
+//=======================================================================
 
 pair<double,double> likelihoodDiscriminant (double mZZ, double m1, double m2, double costhetastar, double costheta1, double costheta2, double phi, double phi1,double scaleFactor=5.0){
 
@@ -114,24 +104,43 @@ pair<double,double> likelihoodDiscriminant (double mZZ, double m1, double m2, do
   RooRealVar* costheta1_rrv = new RooRealVar("costheta1","cos#theta_{1}",-1,1);  
   RooRealVar* costheta2_rrv = new RooRealVar("costheta2","cos#theta_{2}",-1,1);
   RooRealVar* phi_rrv= new RooRealVar("phi","#Phi",-3.1415,3.1415);
-  RooRealVar* mzz_rrv= new RooRealVar("mzz","mZZ",100,180);
+  RooRealVar* costhetastar_rrv = new RooRealVar("costhetastar","cos#theta^{*}",-1,1); 
+  RooRealVar* phi1_rrv= new RooRealVar("phi1","#Phi^{*}_{1}",-3.1415,3.1415);
+  RooRealVar* mzz_rrv= new RooRealVar("mzz","mZZ",100,1000);
+
   AngularPdfFactory *SMHiggs = new AngularPdfFactory(z1mass_rrv,z2mass_rrv,costheta1_rrv,costheta2_rrv,phi_rrv,mzz_rrv);
   SMHiggs->makeSMHiggs();
   SMHiggs->makeParamsConst(true);
-  
+  RooqqZZ_JHU* SMZZ = new RooqqZZ_JHU("SMZZ","SMZZ",*z1mass_rrv,*z2mass_rrv,*costheta1_rrv,*costheta2_rrv,*phi_rrv,*costhetastar_rrv,*phi1_rrv,*mzz_rrv);
+
   z1mass_rrv->setVal(m1);  
   z2mass_rrv->setVal(m2);
   costheta1_rrv->setVal(costheta1);
   costheta2_rrv->setVal(costheta2);
   phi_rrv->setVal(phi);
+  costhetastar_rrv->setVal(costhetastar);
+  phi1_rrv->setVal(phi1);
   mzz_rrv->setVal(mZZ);
-  double Psig = SMHiggs->getVal(mZZ);
 
-  z1mass_rrv->setVal(m1);  
- 
   vector <double> P=my8DTemplate(1, mZZ,  m1,  m2,  costhetastar,  costheta1,  costheta2,  phi,  phi1);
 
-  double Pbackg = P[0]*P[1]*P[2]*P[3]*P[4]*P[5]*scaleFactor; 
+  double Pbackg=0.;
+  double Psig=0.;
+
+  if(mZZ>100 && mZZ<180){
+    Pbackg = P[0]*P[1]*P[2]*P[3]*P[4]*P[5]*5.0;
+    Psig = SMHiggs->getVal(mZZ);
+  }if(mZZ>180&&mZZ<=2*91.188){
+    z1mass_rrv->setVal(mZZ/2.);
+    z2mass_rrv->setVal(mZZ/2.);
+    Pbackg = SMZZ->getVal()/(SMZZ->createIntegral(RooArgSet(*costhetastar_rrv,*costheta1_rrv,*costheta2_rrv,*phi_rrv,*phi1_rrv))->getVal())*10.0;
+    Psig = SMHiggs->PDF->getVal()/(SMHiggs->PDF->createIntegral(RooArgSet(*costheta1_rrv,*costheta2_rrv,*phi_rrv))->getVal());
+  }if(mZZ>2*91.188){
+    z1mass_rrv->setVal(91.188);
+    z2mass_rrv->setVal(91.188);
+    Pbackg = SMZZ->getVal()/(SMZZ->createIntegral(RooArgSet(*costhetastar_rrv,*costheta1_rrv,*costheta2_rrv,*phi_rrv,*phi1_rrv))->getVal())*10.0;
+    Psig = SMHiggs->PDF->getVal()/(SMHiggs->PDF->createIntegral(RooArgSet(*costheta1_rrv,*costheta2_rrv,*phi_rrv))->getVal());
+  }
 
   // - - - - - - - - - - - - - - - - - - - - - Whitbeck 
   // check whether P[i] is zero and print warning
@@ -150,8 +159,10 @@ pair<double,double> likelihoodDiscriminant (double mZZ, double m1, double m2, do
   delete costheta1_rrv;
   delete costheta2_rrv;
   delete phi_rrv;
+  delete costhetastar_rrv;
+  delete phi1_rrv;
   delete mzz_rrv; 
-
+  delete SMZZ;
   delete SMHiggs;
 
   return make_pair(Psig,Pbackg);
@@ -161,13 +172,15 @@ pair<double,double> likelihoodDiscriminant (double mZZ, double m1, double m2, do
 
 void addDtoTree(char* inputFile){
 
+  RooMsgService::instance().getStream(1).removeTopic(NumIntegration);
+
   char inputFileName[100];
   char outputFileName[150];
   sprintf(inputFileName,"%s.root",inputFile);
   sprintf(outputFileName,"%s_withDiscriminants.root",inputFile);
 
   TFile* sigFile = new TFile(inputFileName);
-  TTree* sigTree;
+  TTree* sigTree=0;
     if(sigFile)
         sigTree = (TTree*) sigFile->Get("angles");
     if(!sigTree){
@@ -204,7 +217,7 @@ void addDtoTree(char* inputFile){
 
     sigTree->GetEntry(iEvt);
 
-    if(mzz>100. && mzz<180. && m2>12) 
+    if(mzz>100. && mzz<1000. && m2>12) 
       {
 
       //MELA LD
@@ -221,6 +234,262 @@ void addDtoTree(char* inputFile){
 
 }
 
+//=======================================================================
+
+vector<TH1F*> LDDistributionBackground(char* fileName="../datafiles/7TeV/training/EWKZZ4l_Powheg_mZ4GeV_total_v25_wResolution_withDiscriminants.root"){
+
+  TChain* chain = new TChain("angles");
+
+  chain->Add(fileName);
+
+  double mZZ, m2, m1, costhetastar, costheta1, costheta2, phi, phi1;
+  double MC_weight=1;
+  chain->SetBranchAddress("zzmass",&mZZ);
+  chain->SetBranchAddress("z2mass",&m2);
+  chain->SetBranchAddress("z1mass",&m1);
+  chain->SetBranchAddress("costhetastar",&costhetastar);
+  chain->SetBranchAddress("phi",&phi);
+  chain->SetBranchAddress("costheta1",&costheta1);
+  chain->SetBranchAddress("costheta2",&costheta2);
+  chain->SetBranchAddress("phistar1",&phi1);
+  chain->SetBranchAddress("MC_weight",&MC_weight);
+
+  TFile *f = new TFile("../datafiles/my8DTemplateNotNorm.root","READ");
+  TH1F *h_mzz= (TH1F*)(f->Get("h_mzz"));
+
+  TH1F *h_Psignal= new TH1F("P_signal","P_signal",100,0,0.0002);
+  TH1F *h_Pbackground= new TH1F("P_background","P_background",100,0,0.0002);
+  TH1F *h_LDbackground= new TH1F("LD_background","LD_background",101,0,1.01);
+  vector<TH1F*> vh_LDbackground;
+  for (int i=1; i<41; i++){
+    std::string s;
+    std::stringstream out;
+    out << i;
+    s = out.str();
+    TString name = "h_LDbackground_"+s;
+    vh_LDbackground.push_back((new TH1F(name,name,100,0,1)));
+  }
+
+  vector<double> pT;
+  for (Int_t i=0; i<chain->GetEntries();i++) {
+    chain->GetEvent(i); 
+    
+    if(i%100000 ==0)
+      cout<<"event "<<i<<endl;
+
+    if( !(mZZ>100. && mZZ<180. && m2>12.) )
+      continue;
+
+    pair<double,double> P =  likelihoodDiscriminant(mZZ, m1, m2, costhetastar, costheta1, costheta2, phi, phi1);
+    
+    h_Psignal->Fill(P.first);
+    h_Pbackground->Fill(P.second);
+    h_LDbackground->Fill(P.first/(P.first+P.second));
+    (vh_LDbackground[h_mzz->FindBin(mZZ)-1])->Fill(P.first/(P.first+P.second));
+
+  }
+
+  TCanvas *LD = new TCanvas("LD_background","LD_background",1200,400);
+  LD->Divide(3,1);
+  LD->cd(1)->SetLogy();
+  h_Psignal->Draw();
+  LD->cd(2)->SetLogy();
+  h_Pbackground->Draw();
+  LD->cd(3);
+  h_LDbackground->Draw();
+  LD->Print("LD_background.eps");
+
+  vh_LDbackground.push_back(h_LDbackground);
+ 
+  return vh_LDbackground;
+}
+
+
+//=======================================================================
+vector<TH1F*> LDDistributionSignal(char* fileName="../datafiles/7TeV/testBuildModel/SMHiggs_115_JHU_v0_wResolution_withDiscriminants.root"){
+
+  TChain* chain = new TChain("angles");
+  chain->Add(fileName);
+ 
+  double mZZ, m2, m1, costhetastar, costheta1, costheta2, phi, phi1;
+  double MC_weight=1;
+  chain->SetBranchAddress("zzmass",&mZZ);
+  chain->SetBranchAddress("z2mass",&m2);
+  chain->SetBranchAddress("z1mass",&m1);
+  chain->SetBranchAddress("costhetastar",&costhetastar);
+  chain->SetBranchAddress("phi",&phi);
+  chain->SetBranchAddress("costheta1",&costheta1);
+  chain->SetBranchAddress("costheta2",&costheta2);
+  chain->SetBranchAddress("phistar1",&phi1);
+  chain->SetBranchAddress("MC_weight",&MC_weight);
+
+  TFile *f = new TFile("../datafiles/my8DTemplateNotNorm.root","READ");
+  TH1F *h_mzz= (TH1F*)(f->Get("h_mzz"));
+
+  TH1F *h_LDsignal= new TH1F("LD_signal","LD_signal",101,0,1.01);
+  TH1F *h_Psignal= new TH1F("P_signal","P_signal",100,0,0.0002);
+  TH1F *h_Pbackground= new TH1F("P_background","P_background",100,0,0.0002);
+  vector<TH1F*> vh_LDsignal;
+  for (int i=1; i<41; i++){
+    std::string s;
+     std::stringstream out;
+     out << i;
+     s = out.str();
+     TString name = "  %h_LDsignal_"+s;
+     vh_LDsignal.push_back((new TH1F(name,name,100,0,1)));
+  }
+
+  vector<double> pT;
+  for (Int_t i=0; i<chain->GetEntries();i++) {
+    chain->GetEvent(i); 
+
+    if(i%100000 ==0)
+      cout<<"event "<<i<<endl;
+
+    if( !(mZZ>100. && mZZ<180. && m2>12.) )
+      continue;
+
+    pair<double,double> P =  likelihoodDiscriminant(mZZ, m1, m2, costhetastar, costheta1, costheta2, phi, phi1);
+
+    h_Psignal->Fill(P.first);
+    h_Pbackground->Fill(P.second);
+    h_LDsignal->Fill(P.first/(P.first+P.second));
+    (vh_LDsignal[h_mzz->FindBin(mZZ)-1])->Fill(P.first/(P.first+P.second));
+    
+   }
+
+  TCanvas *LD = new TCanvas("LD_signal","LD_signal",1200,400);
+  LD->Divide(3,1);
+  LD->cd(1)->SetLogy();
+  h_Psignal->Draw();
+  LD->cd(2)->SetLogy();
+  h_Pbackground->Draw();
+  LD->cd(3);
+  h_LDsignal->Draw();
+  LD->Print("LD_signal.eps");
+
+  vh_LDsignal.push_back(h_LDsignal);
+
+  return vh_LDsignal;
+}
+
+//=======================================================================
+
+void storeLDDistribution(bool signal,char* fileName){
+
+  RooMsgService::instance().getStream(1).removeTopic(NumIntegration);
+    
+  vector<TH1F*> vh_LD;
+  TFile *file;
+  if(signal){
+    vh_LD = LDDistributionSignal(fileName);
+    file= new TFile("../datafiles/Dsignal.root","recreate");
+  }else{
+    vh_LD = LDDistributionBackground(fileName);
+    file= new TFile("../datafiles/Dbackground.root","recreate");
+  }
+
+  cout<<"LD computed. Vector size "<<vh_LD.size()<<endl;
+
+  for (int i=1; i<(41+1); i++){ //the last one is integrated over mzz
+    if(vh_LD[i-1]->Integral()>0)
+      vh_LD[i-1]->Scale(1./vh_LD[i-1]->Integral());
+  }
+
+  TH2F* h_mzzD = new TH2F("h_mzzD","h_mzzD",40,100,180,vh_LD[0]->GetNbinsX(),vh_LD[0]->GetXaxis()->GetXmin(),vh_LD[0]->GetXaxis()->GetXmax());
+
+  for (int i=1; i<41; i++){
+    for(int j=1; j<=vh_LD[0]->GetNbinsX(); j++){
+      //cout << vh_LD[i-1]->GetBinContent(j) << endl;
+      h_mzzD->SetBinContent(i,j,vh_LD[i-1]->GetBinContent(j));
+    }
+  }
+  file->cd();
+  h_mzzD->Write();
+}
+
+//=======================================================================
+void genMELApdf(bool isSig=true){
+
+  TFile* inputTempFile;
+  if(isSig)
+    inputTempFile = new TFile("../datafiles/Dsignal.root");
+  else
+    inputTempFile = new TFile("../datafiles/Dbackground.root");
+
+  TH2F* mzzDTemplate;
+  if(inputTempFile)
+    mzzDTemplate = (TH2F*) inputTempFile->Get("h_mzzD");
+
+  if(!inputTempFile)
+    return;
+
+  double integral[40];
+  double checkInt;
+  string lines="";
+  stringstream convert;
+
+  //=====================================                                                                                                    
+  // apply norm and write to file                                                                                                            
+  //=====================================                                                                                                    
+
+  for(int i=0; i<40; i++){
+    checkInt=0;
+    for(int j=0; j<100; j++){
+
+      lines+=" PmzzD[";
+      convert << i;
+      lines+=convert.str()+"][";
+      convert.str("");
+      convert << j;
+      lines+=convert.str()+"]=";
+      convert.str("");
+      if(integral[i]>0){
+        convert << (double)mzzDTemplate->GetBinContent(i+1,j+1);
+        checkInt+=(double)mzzDTemplate->GetBinContent(i+1,j+1)/integral[i];
+      }
+      else
+        convert << 0.00;
+      lines+=convert.str()+";  ";
+      convert.str("");
+
+      if(j%10==0)
+        lines+="\n";
+
+    }
+
+  }
+  ifstream templateFile;
+  if(isSig)
+    templateFile.open("../PDFs/RooMELAModelSig.tpl");
+  else
+    templateFile.open("../PDFs/RooMELAModelBkg.tpl");
+  string templateLine="";
+  ofstream newFile;
+  if(isSig)
+    newFile.open("../PDFs/RooMELAModelSig.cc",ios::out);
+  else
+    newFile.open("../PDFs/RooMELAModelBkg.cc",ios::out);
+
+  while(templateFile.good() && !templateFile.eof()){
+
+    getline(templateFile,templateLine);
+    size_t found=templateLine.find("<INSERT ARRAY>");
+
+    if(found!=string::npos){
+      newFile << lines  << endl;
+    }else{
+      newFile << templateLine << endl;
+    }
+
+  }
+
+  templateFile.close();
+  newFile.close();
+
+}
+
+//=======================================================================
 
 void calculateAngles(TLorentzVector thep4H, TLorentzVector thep4Z1, TLorentzVector thep4Lep11, TLorentzVector thep4Lep12, TLorentzVector thep4Z2, TLorentzVector thep4Lep21, TLorentzVector thep4Lep22, double& costheta1, double& costheta2, double& phi, double& costhetastar, double& phistar1, double& phistar2, double& phistar12, double& phi1, double& phi2){
 	
