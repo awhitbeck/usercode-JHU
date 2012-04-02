@@ -14,7 +14,7 @@
 
 /*
 //be sure to compile/load everything:
- gSystem->AddIncludePath("-I/$ROOFITSYS/include/");
+gSystem->AddIncludePath("-I/$ROOFITSYS/include/");
 .L ../PDFs/RooXZsZs_5D.cxx+
 .L ../src/AngularPdfFactory.cc+
 .L ../PDFs/RooqqZZ_JHU.cxx+
