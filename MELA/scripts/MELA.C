@@ -23,6 +23,38 @@ gSystem->AddIncludePath("-I/$ROOFITSYS/include/");
 
 using namespace RooFit ;
 
+void checkZorder(double& z1mass, double& z2mass,
+                 double& costhetastar, double& costheta1,
+                 double& costheta2, double& phi,
+                 double& phistar1){
+
+  double tempZ1mass=z1mass;
+  double tempZ2mass=z2mass;
+  double tempH1=costheta1;
+  double tempH2=costheta2;
+  double tempHs=costhetastar;
+  double tempPhi1=phistar1;
+  double tempPhi=phi;
+
+  if(z2mass>z1mass){
+
+    z1mass=tempZ2mass;
+    z2mass=tempZ1mass;
+    costhetastar=-tempHs;
+    costheta1=tempH2;
+    costheta2=tempH1;
+    phi=tempPhi;
+    phistar1=-tempPhi1-tempPhi;
+    if(phistar1>3.1415)
+      phistar1=phistar1-2*3.1415;
+    if(phistar1<-3.1415)
+      phistar1=phistar1+2*3.1415;
+
+  }else
+    return;
+
+}
+
 vector<double> my8DTemplate(bool normalized,double mZZ, double m1, double m2, double costhetastar, double costheta1, double costheta2, double phi, double phi1){
 
   TFile *f = new TFile("../datafiles/my8DTemplateNotNorm.root","READ");
@@ -112,6 +144,8 @@ pair<double,double> likelihoodDiscriminant (double mZZ, double m1, double m2, do
   SMHiggs->makeSMHiggs();
   SMHiggs->makeParamsConst(true);
   RooqqZZ_JHU* SMZZ = new RooqqZZ_JHU("SMZZ","SMZZ",*z1mass_rrv,*z2mass_rrv,*costheta1_rrv,*costheta2_rrv,*phi_rrv,*costhetastar_rrv,*phi1_rrv,*mzz_rrv);
+
+  checkZorder(m1,m2,costhetastar,costheta1,costheta2,phi,phi1);
 
   z1mass_rrv->setVal(m1);  
   z2mass_rrv->setVal(m2);
@@ -217,6 +251,8 @@ void addDtoTree(char* inputFile){
 
     sigTree->GetEntry(iEvt);
 
+    checkZorder(m1,m2,hs,h1,h2,phi,phi1);
+
     if(mzz>100. && mzz<1000. && m2>12) 
       {
 
@@ -274,6 +310,8 @@ vector<TH1F*> LDDistributionBackground(char* fileName="../datafiles/7TeV/trainin
   for (Int_t i=0; i<chain->GetEntries();i++) {
     chain->GetEvent(i); 
     
+    checkZorder(m1,m2,costhetastar,costheta1,costheta2,phi,phi1);
+
     if(i%100000 ==0)
       cout<<"event "<<i<<endl;
 
@@ -342,6 +380,8 @@ vector<TH1F*> LDDistributionSignal(char* fileName="../datafiles/7TeV/testBuildMo
   vector<double> pT;
   for (Int_t i=0; i<chain->GetEntries();i++) {
     chain->GetEvent(i); 
+
+    checkZorder(m1,m2,costhetastar,costheta1,costheta2,phi,phi1);
 
     if(i%100000 ==0)
       cout<<"event "<<i<<endl;
