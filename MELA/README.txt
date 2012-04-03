@@ -1,3 +1,23 @@
+==================
+version notes:  ||
+==================
+
+V00-00-01 - 
+
+first stable version.  Low mass LD only.  
+
+-------------------
+
+V00-00-02 - 
+
+corrected bug in calculateAngles() and added protection against 
+possibility of m2>m1 (pdfs implicitly assume m1>m2 below threshold)
+
+LD included for highmass (>180), PDFs still only generated for 
+100<mZZ<180.
+
+==================
+
 Content:
 --------
 PDFs:

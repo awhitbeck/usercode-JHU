@@ -554,6 +554,8 @@ void calculateAngles(TLorentzVector thep4H, TLorentzVector thep4Z1, TLorentzVect
 	// check for z1/z2 convention, redefine all 4 vectors with convention
 	///////////////////////////////////////////////	
 	TLorentzVector p4H, p4Z1, p4M11, p4M12, p4Z2, p4M21, p4M22;
+
+	/* old convention of choosing Z1 ------------------------------
 	p4H = thep4H;
 	if ((phi1 < 0)&&(phi1 >= -TMath::Pi())){
 		p4Z1 = thep4Z2; p4M11 = thep4Lep21; p4M12 = thep4Lep22;
@@ -564,8 +566,11 @@ void calculateAngles(TLorentzVector thep4H, TLorentzVector thep4Z1, TLorentzVect
 		p4Z1 = thep4Z1; p4M11 = thep4Lep11; p4M12 = thep4Lep12;
 		p4Z2 = thep4Z2; p4M21 = thep4Lep21; p4M22 = thep4Lep22;
 		costhetastar = theZ1X_p3.CosTheta();
-	}
-	
+	} ---------------------------------------------- */
+
+	p4Z1 = thep4Z1; p4M11 = thep4Lep11; p4M12 = thep4Lep12;
+	p4Z2 = thep4Z2; p4M21 = thep4Lep21; p4M22 = thep4Lep22;
+	costhetastar = theZ1X_p3.CosTheta();
 	
 	//std::cout << "phi1: " << phi1 << ", phi2: " << phi2 << std::endl;
 	
