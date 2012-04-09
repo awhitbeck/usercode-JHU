@@ -12,16 +12,26 @@
 #include "../src/AngularPdfFactory.cc"
 #include "../PDFs/RooqqZZ_JHU.h"
 
-/*
-//be sure to compile/load everything:
+/* - - - - - - - - - - - - - - - - - - - - - - - 
+================================================
+
+be sure to compile/load everything:
+
 gSystem->AddIncludePath("-I/$ROOFITSYS/include/");
 .L ../PDFs/RooXZsZs_5D.cxx+
 .L ../src/AngularPdfFactory.cc+
 .L ../PDFs/RooqqZZ_JHU.cxx+
 .L MELA.C+
-*/
+ - -  - - - - - - - - - - - - - - -  - - -  -  -
+===============================================*/
 
 using namespace RooFit ;
+
+int mZZbins=50;
+int lowMzz=80;
+int highMzz=180;
+int lowM2=12;
+
 
 void checkZorder(double& z1mass, double& z2mass,
                  double& costhetastar, double& costheta1,
@@ -138,7 +148,7 @@ pair<double,double> likelihoodDiscriminant (double mZZ, double m1, double m2, do
   RooRealVar* phi_rrv= new RooRealVar("phi","#Phi",-3.1415,3.1415);
   RooRealVar* costhetastar_rrv = new RooRealVar("costhetastar","cos#theta^{*}",-1,1); 
   RooRealVar* phi1_rrv= new RooRealVar("phi1","#Phi^{*}_{1}",-3.1415,3.1415);
-  RooRealVar* mzz_rrv= new RooRealVar("mzz","mZZ",100,1000);
+  RooRealVar* mzz_rrv= new RooRealVar("mzz","mZZ",80,1000);
 
   AngularPdfFactory *SMHiggs = new AngularPdfFactory(z1mass_rrv,z2mass_rrv,costheta1_rrv,costheta2_rrv,phi_rrv,mzz_rrv);
   SMHiggs->makeSMHiggs();
@@ -161,7 +171,7 @@ pair<double,double> likelihoodDiscriminant (double mZZ, double m1, double m2, do
   double Pbackg=0.;
   double Psig=0.;
 
-  if(mZZ>100 && mZZ<180){
+  if(mZZ>80 && mZZ<180){
     Pbackg = P[0]*P[1]*P[2]*P[3]*P[4]*P[5]*5.0;
     Psig = SMHiggs->getVal(mZZ);
   }if(mZZ>180&&mZZ<=2*91.188){
@@ -183,7 +193,7 @@ pair<double,double> likelihoodDiscriminant (double mZZ, double m1, double m2, do
   char* varName[6]={"m1/m2","costhetastar","costheta1","coshteta2","phi","phi1"};
   for(int iVar=0; iVar<6; iVar++){
 
-    if(P[iVar]==0 && (m1+m2)<mZZ && m2>12 && mZZ>100 && mZZ<180)
+    if(P[iVar]==0 && (m1+m2)<mZZ && m2>4 && mZZ>80 && mZZ<180)
 	cout << " uh oh... Probability of " << varName[iVar] << " is zero." << endl;
   }
   // - - - - - - - - - - - - - - - - - - - - - 
@@ -244,16 +254,17 @@ void addDtoTree(char* inputFile){
   newTree->Branch("phi",&phi,"phi/D");  
   newTree->Branch("phistar1",&phi1,"phistar1/D");
   newTree->Branch("melaLD",&D,"melaLD/D");  
-  
+
   for(int iEvt=0; iEvt<sigTree->GetEntries(); iEvt++){
 
-    if(iEvt%5000==0) cout << "event: " << iEvt << endl;
+    if(iEvt%5000==0) 
+      cout << "event: " << iEvt << endl;
 
     sigTree->GetEntry(iEvt);
 
     checkZorder(m1,m2,hs,h1,h2,phi,phi1);
 
-    if(mzz>100. && mzz<1000. && m2>12) 
+    if(mzz>80. && mzz<1000. && m2>4. ) 
       {
 
       //MELA LD
@@ -280,6 +291,7 @@ vector<TH1F*> LDDistributionBackground(char* fileName="../datafiles/7TeV/trainin
 
   double mZZ, m2, m1, costhetastar, costheta1, costheta2, phi, phi1;
   double MC_weight=1;
+  double mela=-99;
   chain->SetBranchAddress("zzmass",&mZZ);
   chain->SetBranchAddress("z2mass",&m2);
   chain->SetBranchAddress("z1mass",&m1);
@@ -288,16 +300,15 @@ vector<TH1F*> LDDistributionBackground(char* fileName="../datafiles/7TeV/trainin
   chain->SetBranchAddress("costheta1",&costheta1);
   chain->SetBranchAddress("costheta2",&costheta2);
   chain->SetBranchAddress("phistar1",&phi1);
-  chain->SetBranchAddress("MC_weight",&MC_weight);
+  chain->SetBranchAddress("MC_weight",&MC_weight);  
+  chain->SetBranchAddress("melaLD",&mela);
 
   TFile *f = new TFile("../datafiles/my8DTemplateNotNorm.root","READ");
   TH1F *h_mzz= (TH1F*)(f->Get("h_mzz"));
 
-  TH1F *h_Psignal= new TH1F("P_signal","P_signal",100,0,0.0002);
-  TH1F *h_Pbackground= new TH1F("P_background","P_background",100,0,0.0002);
   TH1F *h_LDbackground= new TH1F("LD_background","LD_background",101,0,1.01);
   vector<TH1F*> vh_LDbackground;
-  for (int i=1; i<41; i++){
+  for (int i=1; i<mZZbins+1; i++){
     std::string s;
     std::stringstream out;
     out << i;
@@ -306,34 +317,33 @@ vector<TH1F*> LDDistributionBackground(char* fileName="../datafiles/7TeV/trainin
     vh_LDbackground.push_back((new TH1F(name,name,100,0,1)));
   }
 
-  vector<double> pT;
   for (Int_t i=0; i<chain->GetEntries();i++) {
-    chain->GetEvent(i); 
-    
-    checkZorder(m1,m2,costhetastar,costheta1,costheta2,phi,phi1);
+
+    mela=-99;
 
     if(i%100000 ==0)
       cout<<"event "<<i<<endl;
+      
+    chain->GetEvent(i); 
 
-    if( !(mZZ>100. && mZZ<180. && m2>12.) )
+    if( !(mZZ>lowMzz && mZZ<highMzz && m2>lowM2) )
       continue;
+          
+    if(mela<0){
 
-    pair<double,double> P =  likelihoodDiscriminant(mZZ, m1, m2, costhetastar, costheta1, costheta2, phi, phi1);
-    
-    h_Psignal->Fill(P.first);
-    h_Pbackground->Fill(P.second);
-    h_LDbackground->Fill(P.first/(P.first+P.second));
-    (vh_LDbackground[h_mzz->FindBin(mZZ)-1])->Fill(P.first/(P.first+P.second));
+      checkZorder(m1,m2,costhetastar,costheta1,costheta2,phi,phi1);
+      
+      pair<double,double> P =  likelihoodDiscriminant(mZZ, m1, m2, costhetastar, costheta1, costheta2, phi, phi1);
+      
+      mela=P.first/(P.first+P.second);
+    }
+      
+    h_LDbackground->Fill(mela,MC_weight);
+    (vh_LDbackground[h_mzz->FindBin(mZZ)-1])->Fill(mela,MC_weight);
 
   }
 
-  TCanvas *LD = new TCanvas("LD_background","LD_background",1200,400);
-  LD->Divide(3,1);
-  LD->cd(1)->SetLogy();
-  h_Psignal->Draw();
-  LD->cd(2)->SetLogy();
-  h_Pbackground->Draw();
-  LD->cd(3);
+  TCanvas *LD = new TCanvas("LD_background","LD_background",400,400);
   h_LDbackground->Draw();
   LD->Print("LD_background.eps");
 
@@ -351,6 +361,7 @@ vector<TH1F*> LDDistributionSignal(char* fileName="../datafiles/7TeV/testBuildMo
  
   double mZZ, m2, m1, costhetastar, costheta1, costheta2, phi, phi1;
   double MC_weight=1;
+  double mela=-99;
   chain->SetBranchAddress("zzmass",&mZZ);
   chain->SetBranchAddress("z2mass",&m2);
   chain->SetBranchAddress("z1mass",&m1);
@@ -360,15 +371,14 @@ vector<TH1F*> LDDistributionSignal(char* fileName="../datafiles/7TeV/testBuildMo
   chain->SetBranchAddress("costheta2",&costheta2);
   chain->SetBranchAddress("phistar1",&phi1);
   chain->SetBranchAddress("MC_weight",&MC_weight);
+  chain->SetBranchAddress("melaLD",&mela);
 
   TFile *f = new TFile("../datafiles/my8DTemplateNotNorm.root","READ");
   TH1F *h_mzz= (TH1F*)(f->Get("h_mzz"));
 
   TH1F *h_LDsignal= new TH1F("LD_signal","LD_signal",101,0,1.01);
-  TH1F *h_Psignal= new TH1F("P_signal","P_signal",100,0,0.0002);
-  TH1F *h_Pbackground= new TH1F("P_background","P_background",100,0,0.0002);
   vector<TH1F*> vh_LDsignal;
-  for (int i=1; i<41; i++){
+  for (int i=1; i<mZZbins+1; i++){
     std::string s;
      std::stringstream out;
      out << i;
@@ -377,38 +387,42 @@ vector<TH1F*> LDDistributionSignal(char* fileName="../datafiles/7TeV/testBuildMo
      vh_LDsignal.push_back((new TH1F(name,name,100,0,1)));
   }
 
-  vector<double> pT;
   for (Int_t i=0; i<chain->GetEntries();i++) {
-    chain->GetEvent(i); 
 
-    checkZorder(m1,m2,costhetastar,costheta1,costheta2,phi,phi1);
+    mela=-99;
 
     if(i%100000 ==0)
       cout<<"event "<<i<<endl;
-
-    if( !(mZZ>100. && mZZ<180. && m2>12.) )
-      continue;
-
-    pair<double,double> P =  likelihoodDiscriminant(mZZ, m1, m2, costhetastar, costheta1, costheta2, phi, phi1);
-
-    h_Psignal->Fill(P.first);
-    h_Pbackground->Fill(P.second);
-    h_LDsignal->Fill(P.first/(P.first+P.second));
-    (vh_LDsignal[h_mzz->FindBin(mZZ)-1])->Fill(P.first/(P.first+P.second));
     
-   }
+    chain->GetEvent(i); 
 
-  TCanvas *LD = new TCanvas("LD_signal","LD_signal",1200,400);
-  LD->Divide(3,1);
-  LD->cd(1)->SetLogy();
-  h_Psignal->Draw();
-  LD->cd(2)->SetLogy();
-  h_Pbackground->Draw();
-  LD->cd(3);
+    if( !(mZZ>lowMzz && mZZ<highMzz && m2>lowM2) )
+      continue;
+      
+    if(mela<0){
+
+      checkZorder(m1,m2,costhetastar,costheta1,costheta2,phi,phi1);
+      
+      pair<double,double> P =  likelihoodDiscriminant(mZZ, m1, m2, costhetastar, costheta1, costheta2, phi, phi1);
+
+      mela=P.first/(P.first+P.second);
+
+    }
+     
+    h_LDsignal->Fill(mela,MC_weight);
+    (vh_LDsignal[h_mzz->FindBin(mZZ)-1])->Fill(mela,MC_weight);
+     
+  }
+    
+  cout << "Drawing" << endl;
+
+  TCanvas *LD = new TCanvas("LD_signal","LD_signal",400,400);
   h_LDsignal->Draw();
   LD->Print("LD_signal.eps");
 
   vh_LDsignal.push_back(h_LDsignal);
+
+  cout << "done" << endl;
 
   return vh_LDsignal;
 }
@@ -431,14 +445,14 @@ void storeLDDistribution(bool signal,char* fileName){
 
   cout<<"LD computed. Vector size "<<vh_LD.size()<<endl;
 
-  for (int i=1; i<(41+1); i++){ //the last one is integrated over mzz
+  for (int i=1; i<(mZZbins+2); i++){ //the last one is integrated over mzz
     if(vh_LD[i-1]->Integral()>0)
       vh_LD[i-1]->Scale(1./vh_LD[i-1]->Integral());
   }
 
-  TH2F* h_mzzD = new TH2F("h_mzzD","h_mzzD",40,100,180,vh_LD[0]->GetNbinsX(),vh_LD[0]->GetXaxis()->GetXmin(),vh_LD[0]->GetXaxis()->GetXmax());
+  TH2F* h_mzzD = new TH2F("h_mzzD","h_mzzD",mZZbins,lowMzz,highMzz,vh_LD[0]->GetNbinsX(),vh_LD[0]->GetXaxis()->GetXmin(),vh_LD[0]->GetXaxis()->GetXmax());
 
-  for (int i=1; i<41; i++){
+  for (int i=1; i<mZZbins+1; i++){
     for(int j=1; j<=vh_LD[0]->GetNbinsX(); j++){
       //cout << vh_LD[i-1]->GetBinContent(j) << endl;
       h_mzzD->SetBinContent(i,j,vh_LD[i-1]->GetBinContent(j));
@@ -464,7 +478,7 @@ void genMELApdf(bool isSig=true){
   if(!inputTempFile)
     return;
 
-  double integral[40];
+  double integral[mZZbins];
   double checkInt;
   string lines="";
   stringstream convert;
@@ -473,7 +487,7 @@ void genMELApdf(bool isSig=true){
   // apply norm and write to file                                                                                                            
   //=====================================                                                                                                    
 
-  for(int i=0; i<40; i++){
+  for(int i=0; i<mZZbins; i++){
     checkInt=0;
     for(int j=0; j<100; j++){
 
