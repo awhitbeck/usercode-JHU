@@ -264,7 +264,7 @@ void addDtoTree(char* inputFile){
 
     checkZorder(m1,m2,hs,h1,h2,phi,phi1);
 
-    if(mzz>80. && mzz<1000. && m2>4. ) 
+    if(mzz>100. && mzz<180. && m2>4. ) 
       {
 
       //MELA LD
@@ -460,6 +460,7 @@ void storeLDDistribution(bool signal,char* fileName){
   }
   file->cd();
   h_mzzD->Write();
+  file->Close();
 }
 
 //=======================================================================
