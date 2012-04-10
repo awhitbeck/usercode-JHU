@@ -27,6 +27,14 @@ PDF can now be generated for arbitrary values of mZZ by setting
 global variables mZZbins, lowMzz, and highMzz.  Low m2 cut can 
 be set with lowM2.  
 
+-------------------
+
+V00-00-04 - 
+
+Adding script for generating 2d PDF.  Instead of hard coding 
+template as 2d array, PDF is built as a prod PDF between 
+1D mZZ shape (RooMzzBkg) and 2D RooHistPdf.  
+
 ==================
 
 Content:
@@ -113,6 +121,7 @@ root
 storeLDDistribution(true,"mySignalFile.root")  
 //store D vs mZZ template for background
 storeLDDistribution(false,"myBackgroundFile.root")  
+//- - - - - CODA - - - -
 genMELApdf(true)
 genMELApdf(false)
 
@@ -123,3 +132,19 @@ be changed in LDDistributionSignal and
 LDDistributionBackground */
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Alternate method to generate 2D PDF - 
+
+Follow instructions above until "CODA", then skip
+to here. 
+
+Once Dsignal*.root and Dbackground*.root are 
+created, one can build a fully correlated 2D PDF
+using Dsignal*.root and Dbackground*.root to build
+a 2D RooHistPdf then multiplying it by a 1D PDF which
+represent the desired mZZ project.  An example is 
+shown in buil2dPdf.C where the background mZZ 
+projection is taken from a custom RooAbsPdf, 
+RooMzzBkg.cc, and the signal mZZ projection is 
+a sum of 2 gaussians.  
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
