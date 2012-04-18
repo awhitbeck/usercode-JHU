@@ -32,6 +32,7 @@ int lowMzz=80;
 int highMzz=180;
 int lowM2=12;
 
+TFile *tempf = new TFile("../datafiles/my8DTemplateNotNorm.root","READ");
 
 void checkZorder(double& z1mass, double& z2mass,
                  double& costhetastar, double& costheta1,
@@ -67,16 +68,14 @@ void checkZorder(double& z1mass, double& z2mass,
 
 vector<double> my8DTemplate(bool normalized,double mZZ, double m1, double m2, double costhetastar, double costheta1, double costheta2, double phi, double phi1){
 
-  TFile *f = new TFile("../datafiles/my8DTemplateNotNorm.root","READ");
-
   //read from a file the 3D and 2D template
-  TH1F *h_mzz= (TH1F*)(f->Get("h_mzz"));
-  TH3F *h_mzzm1m2= (TH3F*)(f->Get("h_mzzm1m2"));
-  TH2F *h_mzzcosthetastar= (TH2F*)(f->Get("h_mzzcosthetastar"));
-  TH2F *h_mzzcostheta1= (TH2F*)(f->Get("h_mzzcostheta1"));
-  TH2F *h_mzzcostheta2= (TH2F*)(f->Get("h_mzzcostheta2"));
-  TH2F *h_mzzphi1= (TH2F*)(f->Get("h_mzzphi1"));
-  TH2F *h_mzzphi= (TH2F*)(f->Get("h_mzzphi"));
+  TH1F *h_mzz= (TH1F*)(tempf->Get("h_mzz"));
+  TH3F *h_mzzm1m2= (TH3F*)(tempf->Get("h_mzzm1m2"));
+  TH2F *h_mzzcosthetastar= (TH2F*)(tempf->Get("h_mzzcosthetastar"));
+  TH2F *h_mzzcostheta1= (TH2F*)(tempf->Get("h_mzzcostheta1"));
+  TH2F *h_mzzcostheta2= (TH2F*)(tempf->Get("h_mzzcostheta2"));
+  TH2F *h_mzzphi1= (TH2F*)(tempf->Get("h_mzzphi1"));
+  TH2F *h_mzzphi= (TH2F*)(tempf->Get("h_mzzphi"));
 
   //multiply the P values
   double n = h_mzz->GetBinContent(h_mzz->FindBin(mZZ));
@@ -129,8 +128,6 @@ vector<double> my8DTemplate(bool normalized,double mZZ, double m1, double m2, do
   P_norm.push_back(Pmzzphi_norm);
   P_norm.push_back(Pmzzphi1_norm);
 
-  delete f;
-  
   if(normalized)
     return P_norm;
   else
@@ -303,8 +300,8 @@ vector<TH1F*> LDDistributionBackground(char* fileName="../datafiles/7TeV/trainin
   chain->SetBranchAddress("MC_weight",&MC_weight);  
   chain->SetBranchAddress("melaLD",&mela);
 
-  TFile *f = new TFile("../datafiles/my8DTemplateNotNorm.root","READ");
-  TH1F *h_mzz= (TH1F*)(f->Get("h_mzz"));
+  //TFile *f = new TFile("../datafiles/my8DTemplateNotNorm.root","READ");
+  TH1F *h_mzz= (TH1F*)(tempf->Get("h_mzz"));
 
   TH1F *h_LDbackground= new TH1F("LD_background","LD_background",101,0,1.01);
   vector<TH1F*> vh_LDbackground;
@@ -373,8 +370,8 @@ vector<TH1F*> LDDistributionSignal(char* fileName="../datafiles/7TeV/testBuildMo
   chain->SetBranchAddress("MC_weight",&MC_weight);
   chain->SetBranchAddress("melaLD",&mela);
 
-  TFile *f = new TFile("../datafiles/my8DTemplateNotNorm.root","READ");
-  TH1F *h_mzz= (TH1F*)(f->Get("h_mzz"));
+  //TFile *f = new TFile("../datafiles/my8DTemplateNotNorm.root","READ");
+  TH1F *h_mzz= (TH1F*)(tempf->Get("h_mzz"));
 
   TH1F *h_LDsignal= new TH1F("LD_signal","LD_signal",101,0,1.01);
   vector<TH1F*> vh_LDsignal;
