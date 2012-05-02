@@ -153,7 +153,7 @@ Calculating the angles and PDFs also works in CMSSW
 Building the 2dPDF is not yet supported
 
 cvs co -d JHU/MELA/src UserCode/JHU/MELA
-rm UserCode/JHU/MELA/scripts/build2dPdf.C
+rm JHU/MELA/src/scripts/build2dPdf.C
 scramv1 b
 
 the package that uses the resulting library needs to have
