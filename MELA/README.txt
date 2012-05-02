@@ -148,3 +148,16 @@ RooMzzBkg.cc, and the signal mZZ projection is
 a sum of 2 gaussians.  
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Calculating the angles and PDFs also works in CMSSW
+Building the 2dPDF is not yet supported
+
+cvs co -d JHU/MELA/src UserCode/JHU/MELA
+rm UserCode/JHU/MELA/scripts/build2dPdf.C
+scramv1 b
+
+the package that uses the resulting library needs to have
+an entry:
+<use name="JHUMELA"/>
+in its BuildFile.xml
+

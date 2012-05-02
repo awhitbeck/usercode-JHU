@@ -12,6 +12,8 @@
 #include "../src/AngularPdfFactory.cc"
 #include "../PDFs/RooqqZZ_JHU.h"
 
+#include "MELA.h"
+
 /* - - - - - - - - - - - - - - - - - - - - - - - 
 ================================================
 
@@ -33,6 +35,15 @@ int highMzz=180;
 int lowM2=12;
 
 TFile *tempf = new TFile("../datafiles/my8DTemplateNotNorm.root","READ");
+
+void setTemplate(char* file){
+  if (tempf !=0)
+    delete tempf;
+
+  tempf= new TFile(file,"READ");
+  tempf->Print("v");
+}
+
 
 void checkZorder(double& z1mass, double& z2mass,
                  double& costhetastar, double& costheta1,
@@ -136,7 +147,7 @@ vector<double> my8DTemplate(bool normalized,double mZZ, double m1, double m2, do
 
 //=======================================================================
 
-pair<double,double> likelihoodDiscriminant (double mZZ, double m1, double m2, double costhetastar, double costheta1, double costheta2, double phi, double phi1,double scaleFactor=5.0){
+pair<double,double> likelihoodDiscriminant (double mZZ, double m1, double m2, double costhetastar, double costheta1, double costheta2, double phi, double phi1,double scaleFactor){
 
   RooRealVar* z1mass_rrv = new RooRealVar("z1mass","m_{Z1}",0,180);
   RooRealVar* z2mass_rrv = new RooRealVar("z2mass","m_{Z2}",0,120); 
@@ -187,7 +198,7 @@ pair<double,double> likelihoodDiscriminant (double mZZ, double m1, double m2, do
   // check whether P[i] is zero and print warning
   // message if so
 
-  char* varName[6]={"m1/m2","costhetastar","costheta1","coshteta2","phi","phi1"};
+  const char* varName[6]={"m1/m2","costhetastar","costheta1","coshteta2","phi","phi1"};
   for(int iVar=0; iVar<6; iVar++){
 
     if(P[iVar]==0 && (m1+m2)<mZZ && m2>4 && mZZ>80 && mZZ<180)
