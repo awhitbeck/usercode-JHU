@@ -1,10 +1,11 @@
 #include <vector>
 #include "TLorentzVector.h"
 
-void checkZorder(double& z1mass, double& z2mass,
-                 double& costhetastar, double& costheta1,
-                 double& costheta2, double& phi,
-                 double& phistar1);
+template <typename U>
+void checkZorder(U& z1mass, U& z2mass,
+                 U& costhetastar, U& costheta1,
+                 U& costheta2, U& phi,
+                 U& phistar1);
 
 vector<double> my8DTemplate(bool normalized,double mZZ, double m1, double m2, double costhetastar, double costheta1, double costheta2, double phi, double phi1);
 

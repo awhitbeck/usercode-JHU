@@ -29,7 +29,7 @@ gSystem->AddIncludePath("-I/$ROOFITSYS/include/");
 
 using namespace RooFit ;
 
-int mZZbins=250;
+int mZZbins=350;
 int lowMzz=100;
 int highMzz=800;
 int lowM2=12;
