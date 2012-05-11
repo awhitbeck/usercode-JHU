@@ -29,9 +29,9 @@ gSystem->AddIncludePath("-I/$ROOFITSYS/include/");
 
 using namespace RooFit ;
 
-int mZZbins=50;
-int lowMzz=80;
-int highMzz=180;
+int mZZbins=250;
+int lowMzz=100;
+int highMzz=800;
 int lowM2=12;
 
 TFile *tempf = new TFile("../datafiles/my8DTemplateNotNorm.root","READ");
@@ -44,19 +44,19 @@ void setTemplate(char* file){
   tempf->Print("v");
 }
 
+template <typename U>
+void checkZorder(U& z1mass, U& z2mass,
+                 U& costhetastar, U& costheta1,
+                 U& costheta2, U& phi,
+                 U& phistar1){
 
-void checkZorder(double& z1mass, double& z2mass,
-                 double& costhetastar, double& costheta1,
-                 double& costheta2, double& phi,
-                 double& phistar1){
-
-  double tempZ1mass=z1mass;
-  double tempZ2mass=z2mass;
-  double tempH1=costheta1;
-  double tempH2=costheta2;
-  double tempHs=costhetastar;
-  double tempPhi1=phistar1;
-  double tempPhi=phi;
+  U tempZ1mass=z1mass;
+  U tempZ2mass=z2mass;
+  U tempH1=costheta1;
+  U tempH2=costheta2;
+  U tempHs=costhetastar;
+  U tempPhi1=phistar1;
+  U tempPhi=phi;
 
   if(z2mass>z1mass){
 
@@ -183,8 +183,8 @@ pair<double,double> likelihoodDiscriminant (double mZZ, double m1, double m2, do
     Pbackg = P[0]*P[1]*P[2]*P[3]*P[4]*P[5]*5.0;
     Psig = SMHiggs->getVal(mZZ);
   }if(mZZ>180&&mZZ<=2*91.188){
-    z1mass_rrv->setVal(mZZ/2.);
-    z2mass_rrv->setVal(mZZ/2.);
+    z1mass_rrv->setVal(mZZ/2. - 1e-9);
+    z2mass_rrv->setVal(mZZ/2. - 1e-9);
     Pbackg = SMZZ->getVal()/(SMZZ->createIntegral(RooArgSet(*costhetastar_rrv,*costheta1_rrv,*costheta2_rrv,*phi_rrv,*phi1_rrv))->getVal())*10.0;
     Psig = SMHiggs->PDF->getVal()/(SMHiggs->PDF->createIntegral(RooArgSet(*costheta1_rrv,*costheta2_rrv,*phi_rrv))->getVal());
   }if(mZZ>2*91.188){
@@ -312,9 +312,8 @@ vector<TH1F*> LDDistributionBackground(char* fileName="../datafiles/7TeV/trainin
   chain->SetBranchAddress("melaLD",&mela);
 
   //TFile *f = new TFile("../datafiles/my8DTemplateNotNorm.root","READ");
-  TH1F *h_mzz= (TH1F*)(tempf->Get("h_mzz"));
 
-  TH1F *h_LDbackground= new TH1F("LD_background","LD_background",101,0,1.01);
+  TH1F *h_LDbackground= new TH1F("LD_background","LD_background",31,0,1.01);
   vector<TH1F*> vh_LDbackground;
   for (int i=1; i<mZZbins+1; i++){
     std::string s;
@@ -322,7 +321,7 @@ vector<TH1F*> LDDistributionBackground(char* fileName="../datafiles/7TeV/trainin
     out << i;
     s = out.str();
     TString name = "h_LDbackground_"+s;
-    vh_LDbackground.push_back((new TH1F(name,name,100,0,1)));
+    vh_LDbackground.push_back((new TH1F(name,name,30,0,1)));
   }
 
   for (Int_t i=0; i<chain->GetEntries();i++) {
@@ -382,9 +381,8 @@ vector<TH1F*> LDDistributionSignal(char* fileName="../datafiles/7TeV/testBuildMo
   chain->SetBranchAddress("melaLD",&mela);
 
   //TFile *f = new TFile("../datafiles/my8DTemplateNotNorm.root","READ");
-  TH1F *h_mzz= (TH1F*)(tempf->Get("h_mzz"));
 
-  TH1F *h_LDsignal= new TH1F("LD_signal","LD_signal",101,0,1.01);
+  TH1F *h_LDsignal= new TH1F("LD_signal","LD_signal",31,0,1.01);
   vector<TH1F*> vh_LDsignal;
   for (int i=1; i<mZZbins+1; i++){
     std::string s;
@@ -392,7 +390,7 @@ vector<TH1F*> LDDistributionSignal(char* fileName="../datafiles/7TeV/testBuildMo
      out << i;
      s = out.str();
      TString name = "  %h_LDsignal_"+s;
-     vh_LDsignal.push_back((new TH1F(name,name,100,0,1)));
+     vh_LDsignal.push_back((new TH1F(name,name,30,0,1)));
   }
 
   for (Int_t i=0; i<chain->GetEntries();i++) {
@@ -437,18 +435,22 @@ vector<TH1F*> LDDistributionSignal(char* fileName="../datafiles/7TeV/testBuildMo
 
 //=======================================================================
 
-void storeLDDistribution(bool signal,char* fileName){
+void storeLDDistribution(bool signal,char* fileName,char* tag){
 
   RooMsgService::instance().getStream(1).removeTopic(NumIntegration);
     
   vector<TH1F*> vh_LD;
   TFile *file;
+  char temp[50];
+
   if(signal){
     vh_LD = LDDistributionSignal(fileName);
-    file= new TFile("../datafiles/Dsignal.root","recreate");
+    sprintf(temp,"../datafiles/Dsignal_%s.root",tag);
+    file= new TFile(temp,"recreate");
   }else{
     vh_LD = LDDistributionBackground(fileName);
-    file= new TFile("../datafiles/Dbackground.root","recreate");
+   sprintf(temp,"../datafiles/Dbackground_%s.root",tag);
+    file= new TFile(temp,"recreate");
   }
 
   cout<<"LD computed. Vector size "<<vh_LD.size()<<endl;
