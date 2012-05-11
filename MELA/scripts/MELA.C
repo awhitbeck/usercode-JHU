@@ -163,7 +163,7 @@ pair<double,double> likelihoodDiscriminant (double mZZ, double m1, double m2, do
   SMHiggs->makeParamsConst(true);
   RooqqZZ_JHU* SMZZ = new RooqqZZ_JHU("SMZZ","SMZZ",*z1mass_rrv,*z2mass_rrv,*costheta1_rrv,*costheta2_rrv,*phi_rrv,*costhetastar_rrv,*phi1_rrv,*mzz_rrv);
 
-  checkZorder(m1,m2,costhetastar,costheta1,costheta2,phi,phi1);
+  checkZorder<double>(m1,m2,costhetastar,costheta1,costheta2,phi,phi1);
 
   z1mass_rrv->setVal(m1);  
   z2mass_rrv->setVal(m2);
@@ -234,7 +234,7 @@ void addDtoTree(char* inputFile){
   TFile* sigFile = new TFile(inputFileName);
   TTree* sigTree=0;
     if(sigFile)
-        sigTree = (TTree*) sigFile->Get("angles");
+        sigTree = (TTree*) sigFile->Get("SelectedTree");
     if(!sigTree){
       cout<<"ERROR could not find the tree!"<<endl;
       return;
@@ -244,9 +244,9 @@ void addDtoTree(char* inputFile){
   TTree* newTree = new TTree("newTree","angles"); 
 
   double m1,m2,mzz,h1,h2,hs,phi,phi1,D;
-  sigTree->SetBranchAddress("z1mass",&m1);
-  sigTree->SetBranchAddress("z2mass",&m2);
-  sigTree->SetBranchAddress("zzmass",&mzz);
+  sigTree->SetBranchAddress("Z1Mass",&m1);
+  sigTree->SetBranchAddress("Z2Mass",&m2);
+  sigTree->SetBranchAddress("ZZMass",&mzz);
   sigTree->SetBranchAddress("costheta1",&h1); 
   sigTree->SetBranchAddress("costheta2",&h2);
   sigTree->SetBranchAddress("costhetastar",&hs);
@@ -270,14 +270,19 @@ void addDtoTree(char* inputFile){
 
     sigTree->GetEntry(iEvt);
 
-    checkZorder(m1,m2,hs,h1,h2,phi,phi1);
+    checkZorder<double>(m1,m2,hs,h1,h2,phi,phi1);
 
-    if(mzz>100. && mzz<180. && m2>4. ) 
+    cout << "costheta1: " << h1 << " costheta2: " << h2 << endl;
+
+    if(mzz>100. && mzz<800. && m2>4. ) 
       {
 
       //MELA LD
       pair<double,double> P = likelihoodDiscriminant(mzz, m1, m2, hs, h1, h2, phi, phi1);
       D=P.first/(P.first+P.second);
+
+      cout << "MELA: " << D << endl;
+
       newTree->Fill();
 
     }
@@ -338,7 +343,7 @@ vector<TH1F*> LDDistributionBackground(char* fileName="../datafiles/7TeV/trainin
           
     if(mela<0){
 
-      checkZorder(m1,m2,costhetastar,costheta1,costheta2,phi,phi1);
+      checkZorder<double>(m1,m2,costhetastar,costheta1,costheta2,phi,phi1);
       
       pair<double,double> P =  likelihoodDiscriminant(mZZ, m1, m2, costhetastar, costheta1, costheta2, phi, phi1);
       
@@ -346,7 +351,7 @@ vector<TH1F*> LDDistributionBackground(char* fileName="../datafiles/7TeV/trainin
     }
       
     h_LDbackground->Fill(mela,MC_weight);
-    (vh_LDbackground[h_mzz->FindBin(mZZ)-1])->Fill(mela,MC_weight);
+    (vh_LDbackground[(int)((mZZ-100.)/2.)])->Fill(mela,MC_weight);
 
   }
 
@@ -407,7 +412,7 @@ vector<TH1F*> LDDistributionSignal(char* fileName="../datafiles/7TeV/testBuildMo
       
     if(mela<0){
 
-      checkZorder(m1,m2,costhetastar,costheta1,costheta2,phi,phi1);
+      checkZorder<double>(m1,m2,costhetastar,costheta1,costheta2,phi,phi1);
       
       pair<double,double> P =  likelihoodDiscriminant(mZZ, m1, m2, costhetastar, costheta1, costheta2, phi, phi1);
 
@@ -416,7 +421,7 @@ vector<TH1F*> LDDistributionSignal(char* fileName="../datafiles/7TeV/testBuildMo
     }
      
     h_LDsignal->Fill(mela,MC_weight);
-    (vh_LDsignal[h_mzz->FindBin(mZZ)-1])->Fill(mela,MC_weight);
+    (vh_LDsignal[(int)((mZZ-100.)/2.)])->Fill(mela,MC_weight);
      
   }
     
