@@ -560,6 +560,11 @@ void genMELApdf(bool isSig=true){
 }
 
 //=======================================================================
+//Z1 should be he Z with mass closest to nominal Z mass
+//thep4Lep11, thep4Lep21 should be the leptons with negative charge
+//thep4Lep21, thep4Lep22 should be the leptons with negative charge
+//(If the 2 leptons from "Z" have the same charge (in control regions),
+//then thep4Lep11, thep4Lep21 should be the leptons with largest azimuthal angle (phi in LF) )
 
 void calculateAngles(TLorentzVector thep4H, TLorentzVector thep4Z1, TLorentzVector thep4Lep11, TLorentzVector thep4Lep12, TLorentzVector thep4Z2, TLorentzVector thep4Lep21, TLorentzVector thep4Lep22, double& costheta1, double& costheta2, double& phi, double& costhetastar, double& phistar1, double& phistar2, double& phistar12, double& phi1, double& phi2){
 	
