@@ -562,7 +562,7 @@ void genMELApdf(bool isSig=true){
 //=======================================================================
 //Z1 should be he Z with mass closest to nominal Z mass
 //thep4Lep11, thep4Lep21 should be the leptons with negative charge
-//thep4Lep21, thep4Lep22 should be the leptons with negative charge
+//thep4Lep21, thep4Lep22 should be the leptons with positive charge
 //(If the 2 leptons from "Z" have the same charge (in control regions),
 //then thep4Lep11, thep4Lep21 should be the leptons with largest azimuthal angle (phi in LF) )
 
