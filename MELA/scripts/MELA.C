@@ -12,13 +12,12 @@
 #include "../src/AngularPdfFactory.cc"
 #include "../PDFs/RooqqZZ_JHU.h"
 
-#include "MELA.h"
-
 /* - - - - - - - - - - - - - - - - - - - - - - - 
 ================================================
 
 be sure to compile/load everything:
 
+root -l -n 
 gSystem->AddIncludePath("-I/$ROOFITSYS/include/");
 .L ../PDFs/RooXZsZs_5D.cxx+
 .L ../src/AngularPdfFactory.cc+
@@ -35,14 +34,6 @@ int highMzz=800;
 int lowM2=12;
 
 TFile *tempf = new TFile("../datafiles/my8DTemplateNotNorm.root","READ");
-
-void setTemplate(char* file){
-  if (tempf !=0)
-    delete tempf;
-
-  tempf= new TFile(file,"READ");
-  tempf->Print("v");
-}
 
 template <typename U>
 void checkZorder(U& z1mass, U& z2mass,
@@ -147,7 +138,7 @@ vector<double> my8DTemplate(bool normalized,double mZZ, double m1, double m2, do
 
 //=======================================================================
 
-pair<double,double> likelihoodDiscriminant (double mZZ, double m1, double m2, double costhetastar, double costheta1, double costheta2, double phi, double phi1,double scaleFactor){
+pair<double,double> likelihoodDiscriminant (double mZZ, double m1, double m2, double costhetastar, double costheta1, double costheta2, double phi, double phi1,double scaleFactor=5.0){
 
   RooRealVar* z1mass_rrv = new RooRealVar("z1mass","m_{Z1}",0,180);
   RooRealVar* z2mass_rrv = new RooRealVar("z2mass","m_{Z2}",0,120); 
@@ -183,8 +174,8 @@ pair<double,double> likelihoodDiscriminant (double mZZ, double m1, double m2, do
     Pbackg = P[0]*P[1]*P[2]*P[3]*P[4]*P[5]*5.0;
     Psig = SMHiggs->getVal(mZZ);
   }if(mZZ>180&&mZZ<=2*91.188){
-    z1mass_rrv->setVal(mZZ/2. - 1e-9);
-    z2mass_rrv->setVal(mZZ/2. - 1e-9);
+    z1mass_rrv->setVal(mZZ/2. - 1e-9);  // turns out signal norm will by zero if m1+m2==mzz
+    z2mass_rrv->setVal(mZZ/2. - 1e-9);  // adding tiny amount to avoid this
     Pbackg = SMZZ->getVal()/(SMZZ->createIntegral(RooArgSet(*costhetastar_rrv,*costheta1_rrv,*costheta2_rrv,*phi_rrv,*phi1_rrv))->getVal())*10.0;
     Psig = SMHiggs->PDF->getVal()/(SMHiggs->PDF->createIntegral(RooArgSet(*costheta1_rrv,*costheta2_rrv,*phi_rrv))->getVal());
   }if(mZZ>2*91.188){
@@ -198,7 +189,7 @@ pair<double,double> likelihoodDiscriminant (double mZZ, double m1, double m2, do
   // check whether P[i] is zero and print warning
   // message if so
 
-  const char* varName[6]={"m1/m2","costhetastar","costheta1","coshteta2","phi","phi1"};
+  char* varName[6]={"m1/m2","costhetastar","costheta1","coshteta2","phi","phi1"};
   for(int iVar=0; iVar<6; iVar++){
 
     if(P[iVar]==0 && (m1+m2)<mZZ && m2>4 && mZZ>80 && mZZ<180)
@@ -241,9 +232,11 @@ void addDtoTree(char* inputFile){
     }
 
   TFile* newFile = new TFile(outputFileName,"RECREATE");
-  TTree* newTree = new TTree("newTree","angles"); 
+  TTree* newTree = new TTree("newTree","SelectedTree"); 
 
-  double m1,m2,mzz,h1,h2,hs,phi,phi1,D;
+  float m1,m2,mzz,h1,h2,hs,phi,phi1,D;
+  float ZZPt, w;
+  
   sigTree->SetBranchAddress("Z1Mass",&m1);
   sigTree->SetBranchAddress("Z2Mass",&m2);
   sigTree->SetBranchAddress("ZZMass",&mzz);
@@ -252,16 +245,20 @@ void addDtoTree(char* inputFile){
   sigTree->SetBranchAddress("costhetastar",&hs);
   sigTree->SetBranchAddress("phi",&phi);  
   sigTree->SetBranchAddress("phistar1",&phi1);
+  sigTree->SetBranchAddress("ZZPt",&ZZPt);
+  sigTree->SetBranchAddress("MC_weight",&w);
 
-  newTree->Branch("z1mass",&m1,"z1mass/D");
-  newTree->Branch("z2mass",&m2,"z2mass/D");
-  newTree->Branch("zzmass",&mzz,"zzmass/D");
-  newTree->Branch("costheta1",&h1,"costheta1/D"); 
-  newTree->Branch("costheta2",&h2,"costheta2/D");
-  newTree->Branch("costhetastar",&hs,"costhetastar/D");
-  newTree->Branch("phi",&phi,"phi/D");  
-  newTree->Branch("phistar1",&phi1,"phistar1/D");
-  newTree->Branch("melaLD",&D,"melaLD/D");  
+  newTree->Branch("z1mass",&m1,"z1mass/F");
+  newTree->Branch("z2mass",&m2,"z2mass/F");
+  newTree->Branch("zzmass",&mzz,"zzmass/F");
+  newTree->Branch("costheta1",&h1,"costheta1/F"); 
+  newTree->Branch("costheta2",&h2,"costheta2/F");
+  newTree->Branch("costhetastar",&hs,"costhetastar/F");
+  newTree->Branch("phi",&phi,"phi/F");  
+  newTree->Branch("phistar1",&phi1,"phistar1/F");
+  newTree->Branch("ZZPt",&ZZPt,"ZZPt/F");
+  newTree->Branch("melaLD",&D,"melaLD/F");
+  newTree->Branch("MC_weight",&w,"MC_weight/F");
 
   for(int iEvt=0; iEvt<sigTree->GetEntries(); iEvt++){
 
@@ -270,18 +267,15 @@ void addDtoTree(char* inputFile){
 
     sigTree->GetEntry(iEvt);
 
-    checkZorder<double>(m1,m2,hs,h1,h2,phi,phi1);
+    checkZorder<float>(m1,m2,hs,h1,h2,phi,phi1);
 
-    cout << "costheta1: " << h1 << " costheta2: " << h2 << endl;
-
-    if(mzz>100. && mzz<800. && m2>4. ) 
+    if(mzz>100. && mzz<1000. && m2>12. ) 
       {
 
       //MELA LD
+	
       pair<double,double> P = likelihoodDiscriminant(mzz, m1, m2, hs, h1, h2, phi, phi1);
       D=P.first/(P.first+P.second);
-
-      cout << "MELA: " << D << endl;
 
       newTree->Fill();
 
@@ -298,23 +292,23 @@ void addDtoTree(char* inputFile){
 
 vector<TH1F*> LDDistributionBackground(char* fileName="../datafiles/7TeV/training/EWKZZ4l_Powheg_mZ4GeV_total_v25_wResolution_withDiscriminants.root"){
 
-  TChain* chain = new TChain("angles");
+  TChain* chain = new TChain("SelectedTree");
 
   chain->Add(fileName);
 
-  double mZZ, m2, m1, costhetastar, costheta1, costheta2, phi, phi1;
-  double MC_weight=1;
-  double mela=-99;
-  chain->SetBranchAddress("zzmass",&mZZ);
-  chain->SetBranchAddress("z2mass",&m2);
-  chain->SetBranchAddress("z1mass",&m1);
+  float mZZ, m2, m1, costhetastar, costheta1, costheta2, phi, phi1;
+  float MC_weight=1;
+  float mela=-99;
+  chain->SetBranchAddress("ZZMass",&mZZ);
+  chain->SetBranchAddress("Z2Mass",&m2);
+  chain->SetBranchAddress("Z1Mass",&m1);
   chain->SetBranchAddress("costhetastar",&costhetastar);
   chain->SetBranchAddress("phi",&phi);
   chain->SetBranchAddress("costheta1",&costheta1);
   chain->SetBranchAddress("costheta2",&costheta2);
   chain->SetBranchAddress("phistar1",&phi1);
-  chain->SetBranchAddress("MC_weight",&MC_weight);  
-  chain->SetBranchAddress("melaLD",&mela);
+  chain->SetBranchAddress("MC_weight_noxsec",&MC_weight);  
+  chain->SetBranchAddress("ZZLD",&mela);
 
   //TFile *f = new TFile("../datafiles/my8DTemplateNotNorm.root","READ");
 
@@ -327,6 +321,7 @@ vector<TH1F*> LDDistributionBackground(char* fileName="../datafiles/7TeV/trainin
     s = out.str();
     TString name = "h_LDbackground_"+s;
     vh_LDbackground.push_back((new TH1F(name,name,30,0,1)));
+    vh_LDbackground[i-1]->Sumw2();
   }
 
   for (Int_t i=0; i<chain->GetEntries();i++) {
@@ -338,12 +333,12 @@ vector<TH1F*> LDDistributionBackground(char* fileName="../datafiles/7TeV/trainin
       
     chain->GetEvent(i); 
 
-    if( !(mZZ>lowMzz && mZZ<highMzz && m2>lowM2) )
+    if( !(mZZ>lowMzz && mZZ<highMzz) ) // && m2>lowM2) )
       continue;
           
     if(mela<0){
 
-      checkZorder<double>(m1,m2,costhetastar,costheta1,costheta2,phi,phi1);
+      checkZorder<float>(m1,m2,costhetastar,costheta1,costheta2,phi,phi1);
       
       pair<double,double> P =  likelihoodDiscriminant(mZZ, m1, m2, costhetastar, costheta1, costheta2, phi, phi1);
       
@@ -368,22 +363,22 @@ vector<TH1F*> LDDistributionBackground(char* fileName="../datafiles/7TeV/trainin
 //=======================================================================
 vector<TH1F*> LDDistributionSignal(char* fileName="../datafiles/7TeV/testBuildModel/SMHiggs_115_JHU_v0_wResolution_withDiscriminants.root"){
 
-  TChain* chain = new TChain("angles");
+  TChain* chain = new TChain("SelectedTree");
   chain->Add(fileName);
  
-  double mZZ, m2, m1, costhetastar, costheta1, costheta2, phi, phi1;
-  double MC_weight=1;
-  double mela=-99;
-  chain->SetBranchAddress("zzmass",&mZZ);
-  chain->SetBranchAddress("z2mass",&m2);
-  chain->SetBranchAddress("z1mass",&m1);
+  float mZZ, m2, m1, costhetastar, costheta1, costheta2, phi, phi1;
+  float MC_weight=1;
+  float mela=-99;
+  chain->SetBranchAddress("ZZMass",&mZZ);
+  chain->SetBranchAddress("Z2Mass",&m2);
+  chain->SetBranchAddress("Z1Mass",&m1);
   chain->SetBranchAddress("costhetastar",&costhetastar);
   chain->SetBranchAddress("phi",&phi);
   chain->SetBranchAddress("costheta1",&costheta1);
   chain->SetBranchAddress("costheta2",&costheta2);
   chain->SetBranchAddress("phistar1",&phi1);
-  chain->SetBranchAddress("MC_weight",&MC_weight);
-  chain->SetBranchAddress("melaLD",&mela);
+  chain->SetBranchAddress("MC_weight_noxsec",&MC_weight);
+  chain->SetBranchAddress("ZZLD",&mela);
 
   //TFile *f = new TFile("../datafiles/my8DTemplateNotNorm.root","READ");
 
@@ -396,6 +391,7 @@ vector<TH1F*> LDDistributionSignal(char* fileName="../datafiles/7TeV/testBuildMo
      s = out.str();
      TString name = "  %h_LDsignal_"+s;
      vh_LDsignal.push_back((new TH1F(name,name,30,0,1)));
+     vh_LDsignal[i-1]->Sumw2();
   }
 
   for (Int_t i=0; i<chain->GetEntries();i++) {
@@ -407,19 +403,19 @@ vector<TH1F*> LDDistributionSignal(char* fileName="../datafiles/7TeV/testBuildMo
     
     chain->GetEvent(i); 
 
-    if( !(mZZ>lowMzz && mZZ<highMzz && m2>lowM2) )
+    if( !(mZZ>lowMzz && mZZ<highMzz ) ) //&& m2>lowM2) )
       continue;
       
     if(mela<0){
 
-      checkZorder<double>(m1,m2,costhetastar,costheta1,costheta2,phi,phi1);
+      checkZorder<float>(m1,m2,costhetastar,costheta1,costheta2,phi,phi1);
       
       pair<double,double> P =  likelihoodDiscriminant(mZZ, m1, m2, costhetastar, costheta1, costheta2, phi, phi1);
 
       mela=P.first/(P.first+P.second);
 
     }
-     
+    
     h_LDsignal->Fill(mela,MC_weight);
     (vh_LDsignal[(int)((mZZ-100.)/2.)])->Fill(mela,MC_weight);
      
@@ -440,11 +436,138 @@ vector<TH1F*> LDDistributionSignal(char* fileName="../datafiles/7TeV/testBuildMo
 
 //=======================================================================
 
-void storeLDDistribution(bool signal,char* fileName,char* tag){
+TH2F* smoothTemplate(TH2F* oldTemp, TH2F* numEvents){
+
+  int effectiveArea=3;
+
+  TH2F* newTemp = new TH2F(*oldTemp);
+
+  double average=0;
+  int nBins=0;
+
+  for(int i=1; i<=350; i++){
+    
+    //if(i<40)
+      //cout << "bin: " << i ;
+
+    for(int j=1; j<=30; j++){
+      
+      //if( i<40 && numEvents->GetBinContent(i,j)!=0 &&  numEvents->GetBinError(i,j)/numEvents->GetBinContent(i,j)>.5) 
+      //cout << " " <<  numEvents->GetBinError(i,j)/ numEvents->GetBinContent(i,j) ;
+
+      if( numEvents->GetBinContent(i,j)!=0 && numEvents->GetBinError(i,j)/numEvents->GetBinContent(i,j)<.5 )  continue;
+
+      if( (numEvents->GetBinContent(i,j)==0 || numEvents->GetBinError(i,j)/numEvents->GetBinContent(i,j)>.5)&& i>40 && i<100 && j>15){
+	effectiveArea=2;
+	for(int a=-effectiveArea; a<=effectiveArea; a++){
+	  for(int b=-effectiveArea; b<=effectiveArea; b++){
+	    if( i+a<41 || i+a>350 || j+b<1 || j+b>30 ) continue;
+	    average+=oldTemp->GetBinContent(i+a,j+b);
+	    nBins++;
+	  }
+	}
+      }else if( (numEvents->GetBinContent(i,j)==0 || numEvents->GetBinError(i,j)/numEvents->GetBinContent(i,j)>.5)&& i>100 ){
+	effectiveArea=3;
+
+	for(int a=-effectiveArea; a<=effectiveArea; a++){
+	  for(int b=-effectiveArea; b<=effectiveArea; b++){
+	    if( i+a<41 || i+a>350 || j+b<1 || j+b>30 ) continue;
+	    average+=oldTemp->GetBinContent(i+a,j+b);
+	    nBins++;
+	  }
+	}
+      }else if( (numEvents->GetBinContent(i,j)==0 || numEvents->GetBinError(i,j)/numEvents->GetBinContent(i,j)>.5)&& i<=40 ){
+	effectiveArea=1;
+	
+	for(int a=-effectiveArea; a<=effectiveArea; a++){
+	  for(int b=-effectiveArea; b<=effectiveArea; b++){
+	    if( i+a<1 || i+a>40 || j+b<1 || j+b>30 ) continue;
+	    average+=oldTemp->GetBinContent(i+a,j+b);
+	    nBins++;
+	  }
+	}
+      }else continue;
+
+      newTemp->SetBinContent(i,j,average/nBins);
+      average=0;
+      nBins=0;
+    }// end loop over D bins
+    //if(i<40) cout << endl;
+  }// end loop over mZZ bins
+
+  double norm=0;
+
+  for(int i=1; i<=350; i++){
+    for(int j=1; j<=30; j++){
+      norm+=newTemp->GetBinContent(i,j);
+    }
+
+    for(int j=1; j<=30; j++){
+      newTemp->SetBinContent(i,j,newTemp->GetBinContent(i,j)/norm);
+    }
+
+    norm=0;
+
+  }
+
+  return newTemp;
+
+}
+
+//=======================================================================
+
+TH2F* reweightForInterference(TH2F* temp){
+
+  // ---------------------
+  // functions for scaling
+  // ---------------------
+  
+  double oldTempValue=0;
+  double newTempValue=0;
+  int point=-1;
+
+  const int numPoints=9;
+
+  double low[numPoints]   ={110.,       122.5,       127.5,       135.,        145.,        155.,        165.,         175.,        185.0}; 
+  double high[numPoints]  ={122.5,     127.5,       135.,        145.,        155.,        165.,        175.,         185.,        1000.0}; 
+  double slope[numPoints] ={3.41629e-01, 3.02312e-01, 2.41973e-01, 1.16892e-01, 4.91500e-02, 3.08193e-02, -6.77412e-02, 1.13210e-02, 0.0 }; // R = yIntr+slope*D
+  double yIntr[numPoints] ={8.39142e-01, 8.55536e-01, 8.87408e-01, 9.39391e-01, 9.75200e-01, 9.90251e-01,  1.03383e+00, 9.39441e-01, 1.0 }; //
+
+  for(int i=1; i<=temp->GetNbinsX(); i++){
+      point = -1;
+
+      // choose correct scale factor
+      for(int p=0; p<numPoints; p++){
+	if( (i*2.+100.)>=low[p] && (i*2.+100.)<high[p] ){
+	  point = p;
+	}
+      }
+      if(point == -1){
+	cout << "ERROR: could not find correct scale factor"<< endl;
+	return 0;
+      }
+
+    for(int j=1; j<=temp->GetNbinsY(); j++){
+      
+      oldTempValue = temp->GetBinContent(i,j);
+      newTempValue = oldTempValue*(slope[point]*(double)j/30.+yIntr[point]);
+      temp->SetBinContent(i,j,newTempValue);
+
+    }// end loop over Y bins
+  }// end loop over X bins
+
+  return temp;
+
+}
+
+//=======================================================================
+
+void storeLDDistribution(bool signal,char* fileName, char* tag,bool smooth=true){
 
   RooMsgService::instance().getStream(1).removeTopic(NumIntegration);
     
   vector<TH1F*> vh_LD;
+
   TFile *file;
   char temp[50];
 
@@ -454,11 +577,21 @@ void storeLDDistribution(bool signal,char* fileName,char* tag){
     file= new TFile(temp,"recreate");
   }else{
     vh_LD = LDDistributionBackground(fileName);
-   sprintf(temp,"../datafiles/Dbackground_%s.root",tag);
+    sprintf(temp,"../datafiles/Dbackground_%s.root",tag);
     file= new TFile(temp,"recreate");
   }
 
   cout<<"LD computed. Vector size "<<vh_LD.size()<<endl;
+
+  TH2F* h_numEvents = new TH2F("numEvents","numEvents",mZZbins,lowMzz,highMzz,vh_LD[0]->GetNbinsX(),vh_LD[0]->GetXaxis()->GetXmin(),vh_LD[0]->GetXaxis()->GetXmax());
+
+  for (int i=1; i<mZZbins+1; i++){
+    for(int j=1; j<=vh_LD[0]->GetNbinsX(); j++){
+      //cout << vh_LD[i-1]->GetBinContent(j) << endl;
+      h_numEvents->SetBinContent(i,j,vh_LD[i-1]->GetBinContent(j));
+      h_numEvents->SetBinError(i,j,vh_LD[i-1]->GetBinError(j));
+    }
+  }
 
   for (int i=1; i<(mZZbins+2); i++){ //the last one is integrated over mzz
     if(vh_LD[i-1]->Integral()>0)
@@ -473,9 +606,17 @@ void storeLDDistribution(bool signal,char* fileName,char* tag){
       h_mzzD->SetBinContent(i,j,vh_LD[i-1]->GetBinContent(j));
     }
   }
+
+  TH2F* oldTemp = new TH2F(*h_mzzD);
+
+  if(smooth)
+    h_mzzD = smoothTemplate(h_mzzD,h_numEvents);
+
   file->cd();
   h_mzzD->Write();
+  oldTemp->Write("oldTemp");
   file->Close();
+
 }
 
 //=======================================================================
@@ -560,11 +701,6 @@ void genMELApdf(bool isSig=true){
 }
 
 //=======================================================================
-//Z1 should be he Z with mass closest to nominal Z mass
-//thep4Lep11, thep4Lep21 should be the leptons with negative charge
-//thep4Lep21, thep4Lep22 should be the leptons with positive charge
-//(If the 2 leptons from "Z" have the same charge (in control regions),
-//then thep4Lep11, thep4Lep21 should be the leptons with largest azimuthal angle (phi in LF) )
 
 void calculateAngles(TLorentzVector thep4H, TLorentzVector thep4Z1, TLorentzVector thep4Lep11, TLorentzVector thep4Lep12, TLorentzVector thep4Z2, TLorentzVector thep4Lep21, TLorentzVector thep4Lep22, double& costheta1, double& costheta2, double& phi, double& costhetastar, double& phistar1, double& phistar2, double& phistar12, double& phi1, double& phi2){
 	
@@ -723,3 +859,4 @@ void calculateAngles(TLorentzVector thep4H, TLorentzVector thep4Z1, TLorentzVect
 	else phistar12 = phistar12_0;
 	
 }
+
