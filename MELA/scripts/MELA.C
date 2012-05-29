@@ -516,7 +516,12 @@ TH2F* smoothTemplate(TH2F* oldTemp, TH2F* numEvents){
 
 //=======================================================================
 
-TH2F* reweightForInterference(TH2F* temp){
+pair<TH2F*,TH2F*> reweightForInterference(TH2F* temp){
+
+  TH2F* tempUp = new TH2F(*temp);
+  TH2F* tempDn = new TH2F(*temp);
+  
+  pair<TH2F*,TH2F*> histoPair(0,0);
 
   // ---------------------
   // functions for scaling
@@ -528,35 +533,128 @@ TH2F* reweightForInterference(TH2F* temp){
 
   const int numPoints=9;
 
-  double low[numPoints]   ={110.,       122.5,       127.5,       135.,        145.,        155.,        165.,         175.,        185.0}; 
-  double high[numPoints]  ={122.5,     127.5,       135.,        145.,        155.,        165.,        175.,         185.,        1000.0}; 
+  double low[numPoints]   ={100.,        122.,        128.,        135.,        145.,        155.,        165.,         175.,        185.0}; 
+  double high[numPoints]  ={122.,        128.,        135.,        145.,        155.,        165.,        175.,         185.,        1000.0}; 
   double slope[numPoints] ={3.41629e-01, 3.02312e-01, 2.41973e-01, 1.16892e-01, 4.91500e-02, 3.08193e-02, -6.77412e-02, 1.13210e-02, 0.0 }; // R = yIntr+slope*D
   double yIntr[numPoints] ={8.39142e-01, 8.55536e-01, 8.87408e-01, 9.39391e-01, 9.75200e-01, 9.90251e-01,  1.03383e+00, 9.39441e-01, 1.0 }; //
 
   for(int i=1; i<=temp->GetNbinsX(); i++){
-      point = -1;
+    point = -1;
 
       // choose correct scale factor
       for(int p=0; p<numPoints; p++){
-	if( (i*2.+100.)>=low[p] && (i*2.+100.)<high[p] ){
+	if( (i*2.+101.)>=low[p] && (i*2.+101.)<high[p] ){
 	  point = p;
 	}
       }
       if(point == -1){
 	cout << "ERROR: could not find correct scale factor"<< endl;
-	return 0;
+	return histoPair;
       }
 
     for(int j=1; j<=temp->GetNbinsY(); j++){
       
       oldTempValue = temp->GetBinContent(i,j);
       newTempValue = oldTempValue*(slope[point]*(double)j/30.+yIntr[point]);
-      temp->SetBinContent(i,j,newTempValue);
+      tempUp->SetBinContent(i,j,newTempValue);
+      newTempValue = oldTempValue*(-slope[point]*(double)j/30.+2.-yIntr[point]);
+      tempDn->SetBinContent(i,j,newTempValue);
 
     }// end loop over Y bins
+
+    // -------------- normalize mZZ slice ----------------
+
+    double norm_up=(tempUp->ProjectionY("temp",i,i))->Integral();
+    double norm_dn=(tempDn->ProjectionY("temp",i,i))->Integral();
+
+    for(int j=1; j<=temp->GetNbinsY(); j++){
+      
+      tempUp->SetBinContent(i,j,tempUp->GetBinContent(i,j)/norm_up);
+      tempDn->SetBinContent(i,j,tempDn->GetBinContent(i,j)/norm_dn);
+
+    }
+
+    // ---------------------------------------------------
+
   }// end loop over X bins
 
-  return temp;
+  histoPair.first  = tempUp;
+  histoPair.second = tempDn;
+
+  return histoPair;
+
+}
+//=======================================================================
+
+pair<TH2F*,TH2F*> reweightForCRunc(TH2F* temp){
+
+  cout << "reweightForCRunc" << endl;
+
+  TH2F* tempUp = new TH2F(*temp);
+  TH2F* tempDn = new TH2F(*temp);
+
+  pair<TH2F*,TH2F*> histoPair(0,0);
+
+  // ---------------------
+  // functions for scaling
+  // ---------------------
+  
+  double oldTempValue=0;
+  double newTempValue=0;
+  int point=-1;
+
+  const int numPoints=8;
+
+  double low[numPoints]   ={100.,        120.,        140.,         160.,     180.,     220.,     260.,     300. }; 
+  double high[numPoints]  ={120.,        140.,        160.,         180.,     220.,     260.,     300.,     1000.};
+  double slope[numPoints] ={4.71836e-01, 1.17671e-01, -3.81680e-01, -1.20481, -1.21944, -2.06928, -1.35337, 0.0  };
+  double yIntr[numPoints] ={6.83860e-01, 9.38454e-01, 1.12690,      1.24502,  1.72764,  2.11050,  1.52771,  1.0  }; 
+
+  for(int i=1; i<=temp->GetNbinsX(); i++){
+      point = -1;
+
+      // choose correct scale factor
+      for(int p=0; p<numPoints; p++){
+	if( (i*2.+101.)>=low[p] && (i*2.+101.)<high[p] ){
+	  point = p;
+	}
+      }
+      if(point == -1){
+	cout << "ERROR: could not find correct scale factor"<< endl;
+	return histoPair;
+      }
+
+    for(int j=1; j<=temp->GetNbinsY(); j++){
+
+      oldTempValue = temp->GetBinContent(i,j);
+      newTempValue = oldTempValue*(slope[point]*(double)j/30.+yIntr[point]);
+      tempUp->SetBinContent(i,j,newTempValue);
+      newTempValue = oldTempValue*(-slope[point]*(double)j/30.+2.-yIntr[point]);
+      tempDn->SetBinContent(i,j,newTempValue);
+
+    }// end loop over Y bins
+
+    // -------------- normalize mZZ slice ----------------
+
+    double norm_up=(tempUp->ProjectionY("temp",i,i))->Integral();
+    double norm_dn=(tempDn->ProjectionY("temp",i,i))->Integral();
+
+
+    for(int j=1; j<=temp->GetNbinsY(); j++){
+      
+      tempUp->SetBinContent(i,j,tempUp->GetBinContent(i,j)/norm_up);
+      tempDn->SetBinContent(i,j,tempDn->GetBinContent(i,j)/norm_dn);
+
+    }
+
+    // ---------------------------------------------------
+
+  }// end loop over X bins
+
+  histoPair.first  = tempUp;
+  histoPair.second = tempDn;
+
+  return histoPair;
 
 }
 
@@ -612,9 +710,17 @@ void storeLDDistribution(bool signal,char* fileName, char* tag,bool smooth=true)
   if(smooth)
     h_mzzD = smoothTemplate(h_mzzD,h_numEvents);
 
+  pair<TH2F*,TH2F*> histoPair;
+  if(!signal)
+    histoPair = reweightForCRunc(h_mzzD);
+  else
+    histoPair = reweightForInterference(h_mzzD);
+
   file->cd();
   h_mzzD->Write();
   oldTemp->Write("oldTemp");
+  histoPair.first->Write("h_mzzD_up");
+  histoPair.second->Write("h_mzzD_dn");
   file->Close();
 
 }
