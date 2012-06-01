@@ -268,18 +268,31 @@ void MELAtemplate(char* channel="4mu",bool lowMass=true){
   canSig->SaveAs(fileName);
 
   if(lowMass)
-    sprintf(fileName,"MELAtemplateSmooth_background_%s_lowMass.eps",channel);
+    sprintf(fileName,"MELAtemplateSmooth_qqZZbackground_%s_lowMass.eps",channel);
   else
-    sprintf(fileName,"MELAtemplateSmooth_background_%s_highMass.eps",channel);
+    sprintf(fileName,"MELAtemplateSmooth_qqZZbackground_%s_highMass.eps",channel);
 
   canqqZZ->SaveAs(fileName);
 
   if(lowMass)
-    sprintf(fileName,"MELAtemplateSmooth_background_%s_lowMass.eps",channel);
+    sprintf(fileName,"MELAtemplateSmooth_ggZZbackground_%s_lowMass.eps",channel);
   else
-    sprintf(fileName,"MELAtemplateSmooth_background_%s_highMass.eps",channel);
+    sprintf(fileName,"MELAtemplateSmooth_ggZZbackground_%s_highMass.eps",channel);
 
   canggZZ->SaveAs(fileName);
+
+}
+
+void makeAllMELAtemplate(){
+
+  MELAtemplate("4mu",false);
+  MELAtemplate("4mu",true);
+  
+  MELAtemplate("4e",false);
+  MELAtemplate("4e",true);
+
+  MELAtemplate("2e2mu",false);
+  MELAtemplate("2e2mu",true);
 
 }
 

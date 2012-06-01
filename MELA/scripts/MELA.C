@@ -28,12 +28,30 @@ gSystem->AddIncludePath("-I/$ROOFITSYS/include/");
 
 using namespace RooFit ;
 
-int mZZbins=350;
+const int mZZbins=109;
 int lowMzz=100;
 int highMzz=800;
 int lowM2=12;
 
+double binning[mZZbins] = {
+  100, 102, 104, 106, 108, 110, 112, 114, 116, 118, 
+  120, 122, 124, 126, 128, 130, 132, 134, 136, 138, 
+  140, 142, 144, 146, 148, 150, 152, 154, 156, 158, 
+  160, 162, 164, 166, 168, 170, 172, 174, 176, 178,
+  180, 182, 184, 186, 188, 190, 192, 194, 196, 198,
+  200, 202, 204, 206, 208, 210, 212, 214, 216, 218, 
+  220, 222, 224, 226, 228, 230, 232, 234, 236, 238, 
+  240, 242, 244, 246, 248, 250, 255, 260, 265, 270, 
+  275, 280, 285, 290, 295, 300, 310, 320, 330, 340, 
+  350, 360, 370, 380, 390, 400, 420, 440, 460, 480, 
+  500, 520, 560, 600, 640, 680, 720, 760, 800 };
+
+TH1F* mzzBinning = new TH1F("mzzBinning","mzzBinning",108,binning);
+
 TFile *tempf = new TFile("../datafiles/my8DTemplateNotNorm.root","READ");
+
+
+
 
 template <typename U>
 void checkZorder(U& z1mass, U& z2mass,
@@ -314,7 +332,7 @@ vector<TH1F*> LDDistributionBackground(char* fileName="../datafiles/7TeV/trainin
 
   TH1F *h_LDbackground= new TH1F("LD_background","LD_background",31,0,1.01);
   vector<TH1F*> vh_LDbackground;
-  for (int i=1; i<mZZbins+1; i++){
+  for (int i=1; i<mZZbins; i++){
     std::string s;
     std::stringstream out;
     out << i;
@@ -346,7 +364,7 @@ vector<TH1F*> LDDistributionBackground(char* fileName="../datafiles/7TeV/trainin
     }
       
     h_LDbackground->Fill(mela,MC_weight);
-    (vh_LDbackground[(int)((mZZ-100.)/2.)])->Fill(mela,MC_weight);
+    (vh_LDbackground[mzzBinning->FindBin(mZZ)-1])->Fill(mela,MC_weight);
 
   }
 
@@ -384,7 +402,7 @@ vector<TH1F*> LDDistributionSignal(char* fileName="../datafiles/7TeV/testBuildMo
 
   TH1F *h_LDsignal= new TH1F("LD_signal","LD_signal",31,0,1.01);
   vector<TH1F*> vh_LDsignal;
-  for (int i=1; i<mZZbins+1; i++){
+  for (int i=1; i<mZZbins; i++){
     std::string s;
      std::stringstream out;
      out << i;
@@ -403,7 +421,7 @@ vector<TH1F*> LDDistributionSignal(char* fileName="../datafiles/7TeV/testBuildMo
     
     chain->GetEvent(i); 
 
-    if( !(mZZ>lowMzz && mZZ<highMzz ) ) //&& m2>lowM2) )
+    if( !(mZZ>lowMzz && mZZ<highMzz)) // && m2>lowM2) )
       continue;
       
     if(mela<0){
@@ -415,9 +433,9 @@ vector<TH1F*> LDDistributionSignal(char* fileName="../datafiles/7TeV/testBuildMo
       mela=P.first/(P.first+P.second);
 
     }
-    
+
     h_LDsignal->Fill(mela,MC_weight);
-    (vh_LDsignal[(int)((mZZ-100.)/2.)])->Fill(mela,MC_weight);
+    (vh_LDsignal[mzzBinning->FindBin(mZZ)-1])->Fill(mela,MC_weight);
      
   }
     
@@ -445,23 +463,17 @@ TH2F* smoothTemplate(TH2F* oldTemp, TH2F* numEvents){
   double average=0;
   int nBins=0;
 
-  for(int i=1; i<=350; i++){
+  for(int i=1; i<mZZbins; i++){
     
-    //if(i<40)
-      //cout << "bin: " << i ;
-
     for(int j=1; j<=30; j++){
       
-      //if( i<40 && numEvents->GetBinContent(i,j)!=0 &&  numEvents->GetBinError(i,j)/numEvents->GetBinContent(i,j)>.5) 
-      //cout << " " <<  numEvents->GetBinError(i,j)/ numEvents->GetBinContent(i,j) ;
-
       if( numEvents->GetBinContent(i,j)!=0 && numEvents->GetBinError(i,j)/numEvents->GetBinContent(i,j)<.5 )  continue;
 
       if( (numEvents->GetBinContent(i,j)==0 || numEvents->GetBinError(i,j)/numEvents->GetBinContent(i,j)>.5)&& i>40 && i<100 && j>15){
 	effectiveArea=2;
 	for(int a=-effectiveArea; a<=effectiveArea; a++){
 	  for(int b=-effectiveArea; b<=effectiveArea; b++){
-	    if( i+a<41 || i+a>350 || j+b<1 || j+b>30 ) continue;
+	    if( i+a<41 || i+a>mZZbins-1 || j+b<1 || j+b>30 ) continue;
 	    average+=oldTemp->GetBinContent(i+a,j+b);
 	    nBins++;
 	  }
@@ -471,7 +483,7 @@ TH2F* smoothTemplate(TH2F* oldTemp, TH2F* numEvents){
 
 	for(int a=-effectiveArea; a<=effectiveArea; a++){
 	  for(int b=-effectiveArea; b<=effectiveArea; b++){
-	    if( i+a<41 || i+a>350 || j+b<1 || j+b>30 ) continue;
+	    if( i+a<41 || i+a>mZZbins-1 || j+b<1 || j+b>30 ) continue;
 	    average+=oldTemp->GetBinContent(i+a,j+b);
 	    nBins++;
 	  }
@@ -497,7 +509,7 @@ TH2F* smoothTemplate(TH2F* oldTemp, TH2F* numEvents){
 
   double norm=0;
 
-  for(int i=1; i<=350; i++){
+  for(int i=1; i<=mZZbins; i++){
     for(int j=1; j<=30; j++){
       norm+=newTemp->GetBinContent(i,j);
     }
@@ -516,12 +528,7 @@ TH2F* smoothTemplate(TH2F* oldTemp, TH2F* numEvents){
 
 //=======================================================================
 
-pair<TH2F*,TH2F*> reweightForInterference(TH2F* temp){
-
-  TH2F* tempUp = new TH2F(*temp);
-  TH2F* tempDn = new TH2F(*temp);
-  
-  pair<TH2F*,TH2F*> histoPair(0,0);
+TH2F* reweightForInterference(TH2F* temp){
 
   // ---------------------
   // functions for scaling
@@ -533,128 +540,35 @@ pair<TH2F*,TH2F*> reweightForInterference(TH2F* temp){
 
   const int numPoints=9;
 
-  double low[numPoints]   ={100.,        122.,        128.,        135.,        145.,        155.,        165.,         175.,        185.0}; 
-  double high[numPoints]  ={122.,        128.,        135.,        145.,        155.,        165.,        175.,         185.,        1000.0}; 
+  double low[numPoints]   ={110.,       122.5,       127.5,       135.,        145.,        155.,        165.,         175.,        185.0}; 
+  double high[numPoints]  ={122.5,     127.5,       135.,        145.,        155.,        165.,        175.,         185.,        1000.0}; 
   double slope[numPoints] ={3.41629e-01, 3.02312e-01, 2.41973e-01, 1.16892e-01, 4.91500e-02, 3.08193e-02, -6.77412e-02, 1.13210e-02, 0.0 }; // R = yIntr+slope*D
   double yIntr[numPoints] ={8.39142e-01, 8.55536e-01, 8.87408e-01, 9.39391e-01, 9.75200e-01, 9.90251e-01,  1.03383e+00, 9.39441e-01, 1.0 }; //
-
-  for(int i=1; i<=temp->GetNbinsX(); i++){
-    point = -1;
-
-      // choose correct scale factor
-      for(int p=0; p<numPoints; p++){
-	if( (i*2.+101.)>=low[p] && (i*2.+101.)<high[p] ){
-	  point = p;
-	}
-      }
-      if(point == -1){
-	cout << "ERROR: could not find correct scale factor"<< endl;
-	return histoPair;
-      }
-
-    for(int j=1; j<=temp->GetNbinsY(); j++){
-      
-      oldTempValue = temp->GetBinContent(i,j);
-      newTempValue = oldTempValue*(slope[point]*(double)j/30.+yIntr[point]);
-      tempUp->SetBinContent(i,j,newTempValue);
-      newTempValue = oldTempValue*(-slope[point]*(double)j/30.+2.-yIntr[point]);
-      tempDn->SetBinContent(i,j,newTempValue);
-
-    }// end loop over Y bins
-
-    // -------------- normalize mZZ slice ----------------
-
-    double norm_up=(tempUp->ProjectionY("temp",i,i))->Integral();
-    double norm_dn=(tempDn->ProjectionY("temp",i,i))->Integral();
-
-    for(int j=1; j<=temp->GetNbinsY(); j++){
-      
-      tempUp->SetBinContent(i,j,tempUp->GetBinContent(i,j)/norm_up);
-      tempDn->SetBinContent(i,j,tempDn->GetBinContent(i,j)/norm_dn);
-
-    }
-
-    // ---------------------------------------------------
-
-  }// end loop over X bins
-
-  histoPair.first  = tempUp;
-  histoPair.second = tempDn;
-
-  return histoPair;
-
-}
-//=======================================================================
-
-pair<TH2F*,TH2F*> reweightForCRunc(TH2F* temp){
-
-  cout << "reweightForCRunc" << endl;
-
-  TH2F* tempUp = new TH2F(*temp);
-  TH2F* tempDn = new TH2F(*temp);
-
-  pair<TH2F*,TH2F*> histoPair(0,0);
-
-  // ---------------------
-  // functions for scaling
-  // ---------------------
-  
-  double oldTempValue=0;
-  double newTempValue=0;
-  int point=-1;
-
-  const int numPoints=8;
-
-  double low[numPoints]   ={100.,        120.,        140.,         160.,     180.,     220.,     260.,     300. }; 
-  double high[numPoints]  ={120.,        140.,        160.,         180.,     220.,     260.,     300.,     1000.};
-  double slope[numPoints] ={4.71836e-01, 1.17671e-01, -3.81680e-01, -1.20481, -1.21944, -2.06928, -1.35337, 0.0  };
-  double yIntr[numPoints] ={6.83860e-01, 9.38454e-01, 1.12690,      1.24502,  1.72764,  2.11050,  1.52771,  1.0  }; 
 
   for(int i=1; i<=temp->GetNbinsX(); i++){
       point = -1;
 
       // choose correct scale factor
       for(int p=0; p<numPoints; p++){
-	if( (i*2.+101.)>=low[p] && (i*2.+101.)<high[p] ){
+	if( (i*2.+100.)>=low[p] && (i*2.+100.)<high[p] ){
 	  point = p;
 	}
       }
       if(point == -1){
 	cout << "ERROR: could not find correct scale factor"<< endl;
-	return histoPair;
+	return 0;
       }
 
     for(int j=1; j<=temp->GetNbinsY(); j++){
-
+      
       oldTempValue = temp->GetBinContent(i,j);
       newTempValue = oldTempValue*(slope[point]*(double)j/30.+yIntr[point]);
-      tempUp->SetBinContent(i,j,newTempValue);
-      newTempValue = oldTempValue*(-slope[point]*(double)j/30.+2.-yIntr[point]);
-      tempDn->SetBinContent(i,j,newTempValue);
+      temp->SetBinContent(i,j,newTempValue);
 
     }// end loop over Y bins
-
-    // -------------- normalize mZZ slice ----------------
-
-    double norm_up=(tempUp->ProjectionY("temp",i,i))->Integral();
-    double norm_dn=(tempDn->ProjectionY("temp",i,i))->Integral();
-
-
-    for(int j=1; j<=temp->GetNbinsY(); j++){
-      
-      tempUp->SetBinContent(i,j,tempUp->GetBinContent(i,j)/norm_up);
-      tempDn->SetBinContent(i,j,tempDn->GetBinContent(i,j)/norm_dn);
-
-    }
-
-    // ---------------------------------------------------
-
   }// end loop over X bins
 
-  histoPair.first  = tempUp;
-  histoPair.second = tempDn;
-
-  return histoPair;
+  return temp;
 
 }
 
@@ -681,9 +595,9 @@ void storeLDDistribution(bool signal,char* fileName, char* tag,bool smooth=true)
 
   cout<<"LD computed. Vector size "<<vh_LD.size()<<endl;
 
-  TH2F* h_numEvents = new TH2F("numEvents","numEvents",mZZbins,lowMzz,highMzz,vh_LD[0]->GetNbinsX(),vh_LD[0]->GetXaxis()->GetXmin(),vh_LD[0]->GetXaxis()->GetXmax());
+  TH2F* h_numEvents = new TH2F("numEvents","numEvents",mZZbins-1,binning,vh_LD[0]->GetNbinsX(),vh_LD[0]->GetXaxis()->GetXmin(),vh_LD[0]->GetXaxis()->GetXmax());
 
-  for (int i=1; i<mZZbins+1; i++){
+  for (int i=1; i<mZZbins; i++){
     for(int j=1; j<=vh_LD[0]->GetNbinsX(); j++){
       //cout << vh_LD[i-1]->GetBinContent(j) << endl;
       h_numEvents->SetBinContent(i,j,vh_LD[i-1]->GetBinContent(j));
@@ -691,14 +605,14 @@ void storeLDDistribution(bool signal,char* fileName, char* tag,bool smooth=true)
     }
   }
 
-  for (int i=1; i<(mZZbins+2); i++){ //the last one is integrated over mzz
+  for (int i=1; i<(mZZbins+1); i++){ //the last one is integrated over mzz
     if(vh_LD[i-1]->Integral()>0)
       vh_LD[i-1]->Scale(1./vh_LD[i-1]->Integral());
   }
 
-  TH2F* h_mzzD = new TH2F("h_mzzD","h_mzzD",mZZbins,lowMzz,highMzz,vh_LD[0]->GetNbinsX(),vh_LD[0]->GetXaxis()->GetXmin(),vh_LD[0]->GetXaxis()->GetXmax());
+  TH2F* h_mzzD = new TH2F("h_mzzD","h_mzzD",mZZbins-1,binning,vh_LD[0]->GetNbinsX(),vh_LD[0]->GetXaxis()->GetXmin(),vh_LD[0]->GetXaxis()->GetXmax());
 
-  for (int i=1; i<mZZbins+1; i++){
+  for (int i=1; i<mZZbins; i++){
     for(int j=1; j<=vh_LD[0]->GetNbinsX(); j++){
       //cout << vh_LD[i-1]->GetBinContent(j) << endl;
       h_mzzD->SetBinContent(i,j,vh_LD[i-1]->GetBinContent(j));
@@ -710,19 +624,28 @@ void storeLDDistribution(bool signal,char* fileName, char* tag,bool smooth=true)
   if(smooth)
     h_mzzD = smoothTemplate(h_mzzD,h_numEvents);
 
-  pair<TH2F*,TH2F*> histoPair;
-  if(!signal)
-    histoPair = reweightForCRunc(h_mzzD);
-  else
-    histoPair = reweightForInterference(h_mzzD);
-
   file->cd();
   h_mzzD->Write();
   oldTemp->Write("oldTemp");
-  histoPair.first->Write("h_mzzD_up");
-  histoPair.second->Write("h_mzzD_dn");
   file->Close();
 
+}
+//=======================================================================
+
+void makeAllTemplates(){
+
+  storeLDDistribution(true,"../datafiles/2mu2e/HZZ4lTree_H*.root","2e2mu");
+  storeLDDistribution(true,"../datafiles/4mu/HZZ4lTree_H*.root","4mu");
+  storeLDDistribution(true,"../datafiles/4e/HZZ4lTree_H*.root","4e");
+  
+  storeLDDistribution(false,"../datafiles/2mu2e/HZZ4lTree_ZZTo2e2mu.root","qqZZ_2e2mu");
+  storeLDDistribution(false,"../datafiles/4mu/HZZ4lTree_ZZTo4mu.root","qqZZ_4mu");
+  storeLDDistribution(false,"../datafiles/4e/HZZ4lTree_ZZTo4e.root","qqZZ_4e");
+  
+  storeLDDistribution(false,"../datafiles/2mu2e/HZZ4lTree_ggZZ2l2l.root","ggZZ_2e2mu");
+  storeLDDistribution(false,"../datafiles/4mu/HZZ4lTree_ggZZ4l.root","ggZZ_4mu");
+  storeLDDistribution(false,"../datafiles/4e/HZZ4lTree_ggZZ4l.root","ggZZ_4e");
+  
 }
 
 //=======================================================================
