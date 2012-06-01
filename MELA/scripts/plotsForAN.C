@@ -14,71 +14,15 @@
 #include "RooPlot.h"
 #include <iostream>
 #include <vector>
+#include <algorithm>
+#include "TTree.h"
 
 using namespace RooFit;
 using namespace std;
 
-void checkAlternativeTemplates(bool signal=true, char* channel="4mu", int i=1, int j=40){
-
-  char temp[100];
-  if(signal)
-    sprintf(temp,"../datafiles/Dsignal_%s.root",channel);
-  else
-    sprintf(temp,"../datafiles/Dbackground_qqZZ_%s.root",channel);
- 
-  TFile* f = new TFile(temp);
-
-  TH2F* h_mzzD = (TH2F*) f->Get("h_mzzD");
-  TH2F* h_mzzD_up = (TH2F*) f->Get("h_mzzD_up");
-  TH2F* h_mzzD_dn = (TH2F*) f->Get("h_mzzD_dn");
-
-  TH1F* nom = (TH1F*) h_mzzD->ProjectionY("nom",i,j);
-  nom->SetLineWidth(2);
-  TH1F* up  = (TH1F*) h_mzzD_up->ProjectionY("up",i,j);
-  up->SetLineWidth(2);
-  up->SetLineColor(2);
-  TH1F* dn  = (TH1F*) h_mzzD_dn->ProjectionY("dn",i,j);
-  dn->SetLineWidth(2);
-  dn->SetLineColor(4);
-
-  TCanvas* can = new TCanvas("can","can",400,400);
-
-  if(up->GetMaximum()>dn->GetMaximum()){
-    up->Draw();
-    dn->Draw("SAME");
-    nom->Draw("SAME");
-  }else{
-    up->Draw();
-    dn->Draw("SAME");
-    nom->Draw("SAME");
-  }
-
-  if(signal){
-    sprintf(temp,"altTempXcheck_signal_%s_%i-%i.png",channel,(int)(i*2+98),(int)(j*2+101));
-    can->SaveAs(temp);
-    sprintf(temp,"altTempXcheck_signal_%s_%i-%i.eps",channel,(int)(i*2+98),(int)(j*2+101));
-    can->SaveAs(temp);
-  }else{
-    sprintf(temp,"altTempXcheck_background_%s_%i-%i.png",channel,(int)(i*2+98),(int)(j*2+101));
-    can->SaveAs(temp);
-    sprintf(temp,"altTempXcheck_background_%s_%i-%i.eps",channel,(int)(i*2+98),(int)(j*2+101));
-    can->SaveAs(temp);
-  }
-
-}
-
-void checkAllAltTemp(){
-
-  for(int i=1; i<=40; i+=5){
-    checkAlternativeTemplates(true,"4mu",i,i+4);  
-    checkAlternativeTemplates(true,"4e",i,i+4);  
-    checkAlternativeTemplates(true,"2e2mu",i,i+4);  
-    checkAlternativeTemplates(false,"4mu",i,i+4);  
-    checkAlternativeTemplates(false,"4e",i,i+4);  
-    checkAlternativeTemplates(false,"2e2mu",i,i+4);  
-  }
-
-}
+// = = = = = = = = = = = = = = = = = = = = 
+// plots show 8 projections for sig & bkg
+// = = = = = = = = = = = = = = = = = = = =
 
 void anglesAndMasses(int index=0){
 
@@ -272,6 +216,10 @@ void anglesAndMasses(int index=0){
 
 }
 
+// = = = = = = = = = = = = = = = = = 
+// plots 2D heat maps of templates
+// = = = = = = = = = = = = = = = = = 
+
 void MELAtemplate(char* channel="4mu",bool lowMass=true){
 
   char fileName[150];
@@ -318,9 +266,9 @@ void MELAtemplate(char* channel="4mu",bool lowMass=true){
 
 }
 
-
-// 2D datacards:
-// /scratch0/hep/whitbeck/4lHelicity/Combination/2012higgsReview2D/workspaces/
+// = = = = = = = = = = = = = = = = = = = = = =
+// compare tempates to individual MC samples
+// = = = = = = = = = = = = = = = = = = = = = =
 
 void cocktailSyst2(int mass, char* channel, char* tempFileName, double lowM=100, double highM=1000){
 
@@ -437,6 +385,10 @@ void runAllcocktailSyst(char* channel="4mu"){
 
 }
 
+// = = = = = = = = = = = = = = = = = = = = 
+// depricated
+// = = = = = = = = = = = = = = = = = = = = 
+
 void cocktailSyst(int index,char* channel){
 
 
@@ -494,59 +446,6 @@ void cocktailSyst(int index,char* channel){
   can->SaveAs(temp);
 }
 
-void smoothTemplate(char* fileName="../datafiles/Dbackground_4mu.root",  int effectiveArea=2){
-
-  TFile* file = new TFile(fileName);
-
-  TH2F* oldTemp = (TH2F*) file->Get("h_mzzD");
-  oldTemp->GetXaxis()->SetRangeUser(180,800);
-  TH2F* newTemp = new TH2F(*oldTemp);
-
-  TCanvas* oldCan = new TCanvas("oldCan","oldCan",400,400);
-  oldTemp->Draw("COLZ");
-  
-  TCanvas* newCan = new TCanvas("newCan","newCan",400,400);
-    
-  double average=0;
-  int nBins=0;
-
-  for(int i=41; i<=400; i++){
-    for(int j=1; j<=30; j++){
-
-      for(int a=-effectiveArea; a<=effectiveArea; a++){
-	for(int b=-effectiveArea; b<=effectiveArea; b++){
-	  if( i+a<41 || i+a>400 || j+b<1 || j+b>30 ) continue;
-	  average+=oldTemp->GetBinContent(i+a,j+b);
-	  nBins++;
-	}
-      }
-
-      newTemp->SetBinContent(i,j,average/nBins);
-      average=0;
-      nBins=0;
-
-    }
-  }
-
-  double norm=0;
-
-  for(int i=41; i<=400; i++){
-    for(int j=1; j<=30; j++){
-      norm+=newTemp->GetBinContent(i,j);
-    }
-
-    for(int j=1; j<=30; j++){
-      newTemp->SetBinContent(i,j,newTemp->GetBinContent(i,j)/norm);
-    }
-
-    norm=0;
-
-  }
-
-  newTemp->Draw("COLZ");
-
-}
-
 void crossCheckSmoothSlices(char* channel="4mu", bool isSig=true, int start=340, int end=350){
 
   char fileName[100];
@@ -572,3 +471,436 @@ void crossCheckSmoothSlices(char* channel="4mu", bool isSig=true, int start=340,
   newHisto->Draw("SAME");
 
 }
+
+void compareZplusX_SSdata_vs_OSdata(double mzzLow=130, double mzzHigh=180){
+
+  // = = = = = = = = 
+  // load trees 
+  // = = = = = = = =
+  
+  TChain* CRssData = new TChain("angles");
+  CRssData->Add("../datafiles/ssCR/ZZ*AnalysisTree_Double*_4670_withDiscriminants.root");
+
+  TChain* CRosData = new TChain("angles");
+  CRosData->Add("../datafiles/osCR/ZZ*AnalysisTree_Double*_4670_withDiscriminants.root");
+
+  if( !CRosData || CRosData->GetEntries()<=0 || !CRssData || CRssData->GetEntries()<=0 ){
+    cout << "problem loading files... " << endl;
+    return;
+  }
+
+  // = = = = = = =
+  // set branches 
+  // = = = = = = =
+
+  double mzz, D;
+
+  CRosData->SetBranchAddress("zzmass",&mzz);
+  CRosData->SetBranchAddress("melaLD",&D);
+
+  CRssData->SetBranchAddress("zzmass",&mzz);
+  CRssData->SetBranchAddress("melaLD",&D);
+
+  // = = = = = = = = = = = 
+  // initialize histograms 
+  // = = = = = = = = = = = 
+
+  TH1F* h_CRosData = new TH1F("h_CRosData",";MELA;",30,0,1);
+  h_CRosData->Sumw2();
+  TH1F* h_CRssData = new TH1F("h_CRssData",";MELA;",30,0,1);
+  h_CRssData->Sumw2();
+
+  TCanvas* can = new TCanvas("can","can",400,400);
+
+  // = = = = = =
+  // fill histos
+  // = = = = = = 
+
+  for(int iEvt=0; iEvt<CRosData->GetEntries(); iEvt++){
+    
+    //if(iEvt%1000 == 0) cout << "event " << iEvt << "/" << CRosData->GetEntries() <<endl;
+    CRosData->GetEntry(iEvt);
+
+    if(mzz>mzzLow&&mzz<mzzHigh){
+      h_CRosData->Fill(D);
+    }
+    
+  }
+
+  for(int iEvt=0; iEvt<CRssData->GetEntries(); iEvt++){
+    
+    //if(iEvt%1000 == 0) cout << "event " << iEvt << "/" << CRssData->GetEntries() <<endl;
+    CRssData->GetEntry(iEvt);
+
+    if(mzz>mzzLow&&mzz<mzzHigh){
+      h_CRssData->Fill(D);
+    }
+    
+  }
+  
+  // = = = = = = 
+  // draw histos
+  // = = = = = = 
+
+  h_CRosData->Scale(h_CRssData->Integral()/h_CRosData->Integral());
+  h_CRosData->SetLineColor(2);
+  h_CRosData->SetLineWidth(2);
+
+  h_CRssData->SetMarkerStyle(8);
+
+  if(h_CRssData->GetMaximum()+h_CRssData->GetBinError(h_CRssData->GetMaximumBin()) > h_CRosData->GetMaximum()+h_CRosData->GetBinError(h_CRosData->GetMaximumBin())){
+    h_CRssData->GetYaxis()->SetRangeUser(0,(h_CRssData->GetMaximum()+h_CRssData->GetBinError(h_CRssData->GetMaximumBin()))*1.5);
+    h_CRssData->Draw("ep");
+    h_CRosData->Draw("EHISTSAME");
+  }else{
+    h_CRosData->GetYaxis()->SetRangeUser(0,(h_CRosData->GetMaximum()+h_CRosData->GetBinError(h_CRosData->GetMaximumBin()))*1.5);
+    h_CRosData->Draw("EHIST");
+    h_CRssData->Draw("SAMEep");
+  }
+
+  // ---------- LEGEND ---------------
+
+  TLegend* leg = new TLegend(.5,.6,.90,.90);
+  leg->SetFillColor(0);
+  leg->SetBorderSize(0);
+  leg->AddEntry(h_CRssData,"Z+X 2P+2F SS (data)","lp");
+  leg->AddEntry(h_CRosData,"Z+X 2P+2F OS (data)","l");
+  //leg->AddEntry(h_qqZZ,"qqZZ (Powheg MC)","l");
+  
+  leg->Draw();
+
+
+  char temp[50];
+  sprintf(temp,"Z+X_SSdata_vs_OSdata_%i-%i.eps",mzzLow,mzzHigh);
+  can->SaveAs(temp);
+  sprintf(temp,"Z+X_SSdata_vs_OSdata_%i-%i.png",mzzLow,mzzHigh);
+  can->SaveAs(temp);
+
+}
+
+void runSSvsOS(){
+  
+  compareZplusX_SSdata_vs_OSdata(double mzzLow=100, double mzzHigh=110);
+  compareZplusX_SSdata_vs_OSdata(double mzzLow=110, double mzzHigh=120);
+  compareZplusX_SSdata_vs_OSdata(double mzzLow=120, double mzzHigh=130);
+  compareZplusX_SSdata_vs_OSdata(double mzzLow=130, double mzzHigh=140);
+  compareZplusX_SSdata_vs_OSdata(double mzzLow=140, double mzzHigh=150);
+  compareZplusX_SSdata_vs_OSdata(double mzzLow=150, double mzzHigh=160);
+  compareZplusX_SSdata_vs_OSdata(double mzzLow=160, double mzzHigh=170);
+  compareZplusX_SSdata_vs_OSdata(double mzzLow=170, double mzzHigh=180);
+    
+}
+
+// = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
+// compare heavy flavor MC with light flavor mC  in SS+OS CR
+// = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
+
+void compareZplusX_Bs_vs_noBs(double mzzLow=130, double mzzHigh=180){
+
+  // = = = = = = = = 
+  // load trees 
+  // = = = = = = = =
+  
+  TChain* CRwithBs = new TChain("angles");
+  CRwithBs->Add("../datafiles/summedCR/ZZ*AnalysisTree_DYJetsToLLTuneZ2*_B_withDiscriminants.root");
+
+  TChain* CRnoBs = new TChain("angles");
+  CRnoBs->Add("../datafiles/summedCR/ZZ*AnalysisTree_DYJetsToLLTuneZ2*_NoB_withDiscriminants.root");
+
+  if( !CRnoBs || CRnoBs->GetEntries()<=0 || !CRwithBs || CRwithBs->GetEntries()<=0 ){
+    cout << "problem loading files... " << endl;
+    return;
+  }
+
+  // -------------
+  // set branches 
+  // -------------
+
+  double mzz, D;
+
+  CRnoBs->SetBranchAddress("zzmass",&mzz);
+  CRnoBs->SetBranchAddress("melaLD",&D);
+
+  CRwithBs->SetBranchAddress("zzmass",&mzz);
+  CRwithBs->SetBranchAddress("melaLD",&D);
+
+  // ---------------------
+  // initialize histograms 
+  // ---------------------
+
+  TH1F* h_CRnoBs = new TH1F("h_CRnoBs",";MELA;",30,0,1);
+  h_CRnoBs->Sumw2();
+  TH1F* h_CRwithBs = new TH1F("h_CRwithBs",";MELA;",30,0,1);
+  h_CRwithBs->Sumw2();
+
+  TCanvas* can = new TCanvas("can","can",400,400);
+
+  // ------------
+  // fill histos
+  // ------------
+
+  for(int iEvt=0; iEvt<CRnoBs->GetEntries(); iEvt++){
+    
+    //if(iEvt%1000 == 0) cout << "event " << iEvt << "/" << CRnoBs->GetEntries() <<endl;
+    CRnoBs->GetEntry(iEvt);
+
+    if(mzz>mzzLow&&mzz<mzzHigh){
+      h_CRnoBs->Fill(D);
+    }
+    
+  }
+
+  for(int iEvt=0; iEvt<CRwithBs->GetEntries(); iEvt++){
+    
+    //if(iEvt%1000 == 0) cout << "event " << iEvt << "/" << CRwithBs->GetEntries() <<endl;
+    CRwithBs->GetEntry(iEvt);
+
+    if(mzz>mzzLow&&mzz<mzzHigh){
+      h_CRwithBs->Fill(D);
+    }
+    
+  }
+  
+  // -----------
+  // draw histos
+  // -----------
+
+  h_CRnoBs->Scale(h_CRwithBs->Integral()/h_CRnoBs->Integral());
+  h_CRnoBs->SetLineColor(2);
+  h_CRnoBs->SetLineWidth(2);
+
+  h_CRwithBs->SetMarkerStyle(8);
+
+  if(h_CRwithBs->GetMaximum()+h_CRwithBs->GetBinError(h_CRwithBs->GetMaximumBin()) > h_CRnoBs->GetMaximum()+h_CRnoBs->GetBinError(h_CRnoBs->GetMaximumBin())){
+    h_CRwithBs->GetYaxis()->SetRangeUser(0,(h_CRwithBs->GetMaximum()+h_CRwithBs->GetBinError(h_CRwithBs->GetMaximumBin()))*1.5);
+    h_CRwithBs->Draw("ep");
+    h_CRnoBs->Draw("EHISTSAME");
+  }else{
+    h_CRnoBs->GetYaxis()->SetRangeUser(0,(h_CRnoBs->GetMaximum()+h_CRnoBs->GetBinError(h_CRnoBs->GetMaximumBin()))*1.5);
+    h_CRnoBs->Draw("EHIST");
+    h_CRwithBs->Draw("SAMEep");
+  }
+
+  // ---------- LEGEND ---------------
+
+  TLegend* leg = new TLegend(.5,.6,.90,.90);
+  leg->SetFillColor(0);
+  leg->SetBorderSize(0);
+  leg->AddEntry(h_CRwithBs,"Z+X 2P+2F HF (MadGraph MC)","lp");
+  leg->AddEntry(h_CRnoBs,"Z+X 2P+2F LF (MadGraph MC)","l");
+  //leg->AddEntry(h_qqZZ,"qqZZ (Powheg MC)","l");
+  
+  leg->Draw();
+
+
+  char temp[50];
+  sprintf(temp,"Z+X_MCwithBs_vs_MCnoBs_%i-%i.eps",mzzLow,mzzHigh);
+  can->SaveAs(temp);
+  sprintf(temp,"Z+X_MCwithBs_vs_MCnoBs_%i-%i.png",mzzLow,mzzHigh);
+  can->SaveAs(temp);
+
+}
+
+void runBvsNoBs(){
+
+  compareZplusX_Bs_vs_noBs(double mzzLow=100, double mzzHigh=110);
+  compareZplusX_Bs_vs_noBs(double mzzLow=110, double mzzHigh=120);
+  compareZplusX_Bs_vs_noBs(double mzzLow=120, double mzzHigh=130);
+  compareZplusX_Bs_vs_noBs(double mzzLow=130, double mzzHigh=140);
+  compareZplusX_Bs_vs_noBs(double mzzLow=140, double mzzHigh=150);
+  compareZplusX_Bs_vs_noBs(double mzzLow=150, double mzzHigh=160);
+  compareZplusX_Bs_vs_noBs(double mzzLow=160, double mzzHigh=170);
+  compareZplusX_Bs_vs_noBs(double mzzLow=170, double mzzHigh=180);
+    
+}
+// = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
+// function below plots qqZZ, data CR, MC CR shapes, calculates
+// the ratio and fits the ratio with a line
+// = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
+
+void measureSystematics(double mzzLow=130, double mzzHigh=180){
+
+  // ----------
+  // load trees 
+  // ----------
+  
+  TChain* CRdata = new TChain("angles");
+  CRdata->Add("../datafiles/summedCR/ZZ*AnalysisTree_Double*_4670_withDiscriminants.root");
+
+  TChain* CRmc = new TChain("angles");
+  CRmc->Add("../datafiles/summedCR/ZZ*AnalysisTree_DYJetsToLLTuneZ2*_withDiscriminants.root");
+
+  TChain* qqZZ = new TChain("angles");
+  qqZZ->Add("../datafiles/ZZ*AnalysisTree_ZZTo*_withDiscriminants.root");
+
+  if( !CRmc || CRmc->GetEntries()<=0 || !CRdata || CRdata->GetEntries()<=0 || !qqZZ || qqZZ->GetEntries()<=0 ){
+    cout << "problem loading files... " << endl;
+    return;
+  }
+
+  // = = = = = = =
+  // set branches 
+  // = = = = = = =
+
+  double mzz, D;
+
+  CRmc->SetBranchAddress("zzmass",&mzz);
+  CRmc->SetBranchAddress("melaLD",&D);
+
+  CRdata->SetBranchAddress("zzmass",&mzz);
+  CRdata->SetBranchAddress("melaLD",&D);
+
+  qqZZ->SetBranchAddress("zzmass",&mzz);
+  qqZZ->SetBranchAddress("melaLD",&D);
+
+  // = = = = = = = = = = = 
+  // initialize histograms 
+  // = = = = = = = = = = = 
+
+  TH1F* h_CRmc = new TH1F("h_CRmc",";MELA;",30,0,1);
+  h_CRmc->Sumw2();
+  TH1F* h_CRdata = new TH1F("h_CRdata",";MELA;",30,0,1);
+  h_CRdata->Sumw2();
+  TH1F* h_qqZZ = new TH1F("h_qqZZ",";MELA;",30,0,1);
+  h_qqZZ->Sumw2();
+
+  TCanvas* can = new TCanvas("can","can",400,550);
+  TPad* pad2 = new TPad("pad2","pad2",0.,0.,1.,0.3);
+  TPad* pad1 = new TPad("pad1","pad1",0.,0.3,1.,1.);
+  pad2->SetBottomMargin(0.22);
+  
+  pad1->Draw();
+  pad2->Draw();
+
+  // = = = = = =
+  // fill histos
+  // = = = = = = 
+
+
+  for(int iEvt=0; iEvt<qqZZ->GetEntries(); iEvt++){
+    
+    //if(iEvt%1000 == 0) cout << "event " << iEvt << "/" << qqZZ->GetEntries() <<endl;
+    qqZZ->GetEntry(iEvt);
+
+    if(mzz>mzzLow&&mzz<mzzHigh){
+      h_qqZZ->Fill(D);
+    }
+    
+  }
+
+  for(int iEvt=0; iEvt<CRmc->GetEntries(); iEvt++){
+    
+    //if(iEvt%1000 == 0) cout << "event " << iEvt << "/" << CRmc->GetEntries() <<endl;
+    CRmc->GetEntry(iEvt);
+
+    if(mzz>mzzLow&&mzz<mzzHigh){
+      h_CRmc->Fill(D);
+    }
+    
+  }
+
+  for(int iEvt=0; iEvt<CRdata->GetEntries(); iEvt++){
+    
+    //if(iEvt%1000 == 0) cout << "event " << iEvt << "/" << CRdata->GetEntries() <<endl;
+    CRdata->GetEntry(iEvt);
+
+    if(mzz>mzzLow&&mzz<mzzHigh){
+      h_CRdata->Fill(D);
+    }
+    
+  }
+  
+  // = = = = = = 
+  // draw histos
+  // = = = = = = 
+
+  pad1->cd();
+
+  h_qqZZ->Scale(h_CRdata->Integral()/h_qqZZ->Integral());
+  h_qqZZ->SetLineColor(4);
+  h_qqZZ->SetLineStyle(2);  
+  h_qqZZ->SetLineWidth(2);
+
+  h_CRmc->Scale(h_CRdata->Integral()/h_CRmc->Integral());
+  h_CRmc->SetLineColor(2);
+  h_CRmc->SetLineWidth(2);
+
+  h_CRdata->SetMarkerStyle(8);
+
+  if(h_CRdata->GetMaximum()+h_CRdata->GetBinError(h_CRdata->GetMaximumBin()) > h_CRmc->GetMaximum()+h_CRmc->GetBinError(h_CRmc->GetMaximumBin())){
+    h_CRdata->GetYaxis()->SetRangeUser(0,(h_CRdata->GetMaximum()+h_CRdata->GetBinError(h_CRdata->GetMaximumBin()))*1.5);
+    h_CRdata->Draw("ep");
+    h_CRmc->Draw("EhistSAME");
+    h_qqZZ->Draw("EhistSAME");
+  }else{
+    h_CRmc->GetYaxis()->SetRangeUser(0,(h_CRmc->GetMaximum()+h_CRmc->GetBinError(h_CRmc->GetMaximumBin()))*1.5);
+    h_CRmc->Draw("Ehist");
+    h_CRdata->Draw("SAMEep");
+    h_qqZZ->Draw("EhistSAME");
+  }
+
+  // ---------- LEGEND ---------------
+
+  TLegend* leg = new TLegend(.5,.6,.90,.90);
+  leg->SetFillColor(0);
+  leg->SetBorderSize(0);
+  leg->AddEntry(h_CRdata,"Z+X 2P+2F SS (data)","lp");
+  leg->AddEntry(h_CRmc,"Z+X 2P+2F OS (data)","l");
+  //leg->AddEntry(h_qqZZ,"qqZZ (Powheg MC)","l");
+  
+  leg->Draw();
+
+  // ------------ RATIO PAD ---------------
+
+  pad2->cd();
+  
+  TH1F* ratio_qqZZ   = new TH1F(*h_qqZZ);
+  ratio_qqZZ->Divide(h_qqZZ);
+  TH1F* ratio_CRmc   = new TH1F(*h_CRmc);
+  ratio_CRmc->Divide(h_qqZZ);
+  TH1F* ratio_CRdata = new TH1F(*h_CRdata);
+  ratio_CRdata->Divide(h_qqZZ);
+
+  ratio_CRdata->GetYaxis()->SetRangeUser(0.,2.);
+  ratio_CRdata->Draw("p");
+
+  // ------------- FIT RATIO -------------
+
+  cout << "Fitting data CR " << mzzLow << "-" << mzzHigh << endl;
+
+  TF1* fline = new TF1("fline","[0]+[1]*x",mzzLow,mzzHigh);
+  fline->SetLineWidth(2);
+  fline->SetLineColor(kGreen+1);
+  ratio_CRdata->Fit("fline","");
+  gStyle->SetOptFit(0);
+
+  ratio_CRmc->Draw("EhistSAME");
+  ratio_qqZZ->Draw("EhistSAME");
+
+  // -------------------------------------
+
+
+  char temp[50];
+  sprintf(temp,"Z+X_data_vs_MC_vs_qqZZ_%i-%i.eps",mzzLow,mzzHigh);
+  can->SaveAs(temp);
+  sprintf(temp,"Z+X_data_vs_MC_vs_qqZZ_%i-%i.png",mzzLow,mzzHigh);
+  can->SaveAs(temp);
+
+}
+
+// = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
+// measure systematic effect in course binned mZZ windows
+// = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
+
+void runSystematics(){
+
+  measureSystematics(double mzzLow=100, double mzzHigh=120);
+  measureSystematics(double mzzLow=120, double mzzHigh=140);
+  measureSystematics(double mzzLow=140, double mzzHigh=160);
+  measureSystematics(double mzzLow=180, double mzzHigh=220);
+  measureSystematics(double mzzLow=220, double mzzHigh=260);
+  measureSystematics(double mzzLow=260, double mzzHigh=300);
+
+}
+
+
