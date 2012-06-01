@@ -5,6 +5,8 @@
 #include "TCanvas.h"
 #include "TLegend.h"
 #include "TSystem.h"
+#include "TF1.h"
+#include "TTree.h"
 #include "RooRealVar.h"
 #include "RooDataSet.h"
 #include "RooWorkspace.h"
@@ -15,7 +17,6 @@
 #include <iostream>
 #include <vector>
 #include <algorithm>
-#include "TTree.h"
 
 using namespace RooFit;
 using namespace std;
@@ -225,30 +226,39 @@ void MELAtemplate(char* channel="4mu",bool lowMass=true){
   char fileName[150];
   sprintf(fileName,"../datafiles/Dsignal_%s.root",channel);
   TFile* sigFile = new TFile(fileName);
-  sprintf(fileName,"../datafiles/Dbackground_%s.root",channel);
-  TFile* bkgFile = new TFile(fileName);
+  sprintf(fileName,"../datafiles/Dbackground_qqZZ_%s.root",channel);
+  TFile* qqZZFile = new TFile(fileName);
+  sprintf(fileName,"../datafiles/Dbackground_ggZZ_%s.root",channel);
+  TFile* ggZZFile = new TFile(fileName);
 
   TH2F* sigTemplate = (TH2F*) sigFile->Get("h_mzzD");
-  TH2F* bkgTemplate = (TH2F*) bkgFile->Get("h_mzzD");
+  TH2F* qqZZTemplate = (TH2F*) qqZZFile->Get("h_mzzD");
+  TH2F* ggZZTemplate = (TH2F*) ggZZFile->Get("h_mzzD");
   
   if(lowMass){
     sigTemplate->GetXaxis()->SetRangeUser(100,180);
-    bkgTemplate->GetXaxis()->SetRangeUser(100,180);
+    qqZZTemplate->GetXaxis()->SetRangeUser(100,180);
+    ggZZTemplate->GetXaxis()->SetRangeUser(100,180);
   }else{
     sigTemplate->GetXaxis()->SetRangeUser(180,800);
-    bkgTemplate->GetXaxis()->SetRangeUser(180,800);
+    qqZZTemplate->GetXaxis()->SetRangeUser(180,800); 
+    ggZZTemplate->GetXaxis()->SetRangeUser(180,800);
   }
  
   sigTemplate->GetXaxis()->SetTitle("m_{4l}");
   sigTemplate->GetYaxis()->SetTitle("D");
-  bkgTemplate->GetXaxis()->SetTitle("m_{4l}");
-  bkgTemplate->GetYaxis()->SetTitle("D");
+  qqZZTemplate->GetXaxis()->SetTitle("m_{4l}");
+  qqZZTemplate->GetYaxis()->SetTitle("D");
+  ggZZTemplate->GetXaxis()->SetTitle("m_{4l}");
+  ggZZTemplate->GetYaxis()->SetTitle("D");
   
 
   TCanvas* canSig = new TCanvas("canSig","canSig",400,400);
   sigTemplate->Draw("COL");
-  TCanvas* canBkg = new TCanvas("canBkg","canBkg",400,400);
-  bkgTemplate->Draw("COL");
+  TCanvas* canqqZZ = new TCanvas("canqqZZ","canqqZZ",400,400);
+  qqZZTemplate->Draw("COL");
+  TCanvas* canggZZ = new TCanvas("canggZZ","canggZZ",400,400);
+  ggZZTemplate->Draw("COL");
 
   if(lowMass)
     sprintf(fileName,"MELAtemplateSmooth_signal_%s_lowMass.eps",channel);
@@ -262,7 +272,14 @@ void MELAtemplate(char* channel="4mu",bool lowMass=true){
   else
     sprintf(fileName,"MELAtemplateSmooth_background_%s_highMass.eps",channel);
 
-  canBkg->SaveAs(fileName);
+  canqqZZ->SaveAs(fileName);
+
+  if(lowMass)
+    sprintf(fileName,"MELAtemplateSmooth_background_%s_lowMass.eps",channel);
+  else
+    sprintf(fileName,"MELAtemplateSmooth_background_%s_highMass.eps",channel);
+
+  canggZZ->SaveAs(fileName);
 
 }
 
@@ -571,23 +588,23 @@ void compareZplusX_SSdata_vs_OSdata(double mzzLow=130, double mzzHigh=180){
 
 
   char temp[50];
-  sprintf(temp,"Z+X_SSdata_vs_OSdata_%i-%i.eps",mzzLow,mzzHigh);
+  sprintf(temp,"Z+X_SSdata_vs_OSdata_%i-%i.eps",(int)mzzLow,(int)mzzHigh);
   can->SaveAs(temp);
-  sprintf(temp,"Z+X_SSdata_vs_OSdata_%i-%i.png",mzzLow,mzzHigh);
+  sprintf(temp,"Z+X_SSdata_vs_OSdata_%i-%i.png",(int)mzzLow,(int)mzzHigh);
   can->SaveAs(temp);
 
 }
 
 void runSSvsOS(){
   
-  compareZplusX_SSdata_vs_OSdata(double mzzLow=100, double mzzHigh=110);
-  compareZplusX_SSdata_vs_OSdata(double mzzLow=110, double mzzHigh=120);
-  compareZplusX_SSdata_vs_OSdata(double mzzLow=120, double mzzHigh=130);
-  compareZplusX_SSdata_vs_OSdata(double mzzLow=130, double mzzHigh=140);
-  compareZplusX_SSdata_vs_OSdata(double mzzLow=140, double mzzHigh=150);
-  compareZplusX_SSdata_vs_OSdata(double mzzLow=150, double mzzHigh=160);
-  compareZplusX_SSdata_vs_OSdata(double mzzLow=160, double mzzHigh=170);
-  compareZplusX_SSdata_vs_OSdata(double mzzLow=170, double mzzHigh=180);
+  compareZplusX_SSdata_vs_OSdata(100,110);
+  compareZplusX_SSdata_vs_OSdata(110,120);
+  compareZplusX_SSdata_vs_OSdata(120,130);
+  compareZplusX_SSdata_vs_OSdata(130,140);
+  compareZplusX_SSdata_vs_OSdata(140,150);
+  compareZplusX_SSdata_vs_OSdata(150,160);
+  compareZplusX_SSdata_vs_OSdata(160,170);
+  compareZplusX_SSdata_vs_OSdata(170,180);
     
 }
 
@@ -694,23 +711,23 @@ void compareZplusX_Bs_vs_noBs(double mzzLow=130, double mzzHigh=180){
 
 
   char temp[50];
-  sprintf(temp,"Z+X_MCwithBs_vs_MCnoBs_%i-%i.eps",mzzLow,mzzHigh);
+  sprintf(temp,"Z+X_MCwithBs_vs_MCnoBs_%i-%i.eps",(int)mzzLow,(int)mzzHigh);
   can->SaveAs(temp);
-  sprintf(temp,"Z+X_MCwithBs_vs_MCnoBs_%i-%i.png",mzzLow,mzzHigh);
+  sprintf(temp,"Z+X_MCwithBs_vs_MCnoBs_%i-%i.png",(int)mzzLow,(int)mzzHigh);
   can->SaveAs(temp);
 
 }
 
 void runBvsNoBs(){
 
-  compareZplusX_Bs_vs_noBs(double mzzLow=100, double mzzHigh=110);
-  compareZplusX_Bs_vs_noBs(double mzzLow=110, double mzzHigh=120);
-  compareZplusX_Bs_vs_noBs(double mzzLow=120, double mzzHigh=130);
-  compareZplusX_Bs_vs_noBs(double mzzLow=130, double mzzHigh=140);
-  compareZplusX_Bs_vs_noBs(double mzzLow=140, double mzzHigh=150);
-  compareZplusX_Bs_vs_noBs(double mzzLow=150, double mzzHigh=160);
-  compareZplusX_Bs_vs_noBs(double mzzLow=160, double mzzHigh=170);
-  compareZplusX_Bs_vs_noBs(double mzzLow=170, double mzzHigh=180);
+  compareZplusX_Bs_vs_noBs(100,110);
+  compareZplusX_Bs_vs_noBs(110,120);
+  compareZplusX_Bs_vs_noBs(120,130);
+  compareZplusX_Bs_vs_noBs(130,140);
+  compareZplusX_Bs_vs_noBs(140,150);
+  compareZplusX_Bs_vs_noBs(150,160);
+  compareZplusX_Bs_vs_noBs(160,170);
+  compareZplusX_Bs_vs_noBs(170,180);
     
 }
 // = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
@@ -872,7 +889,7 @@ void measureSystematics(double mzzLow=130, double mzzHigh=180){
   fline->SetLineWidth(2);
   fline->SetLineColor(kGreen+1);
   ratio_CRdata->Fit("fline","");
-  gStyle->SetOptFit(0);
+  //gStyle->SetOptFit(0);
 
   ratio_CRmc->Draw("EhistSAME");
   ratio_qqZZ->Draw("EhistSAME");
@@ -881,9 +898,9 @@ void measureSystematics(double mzzLow=130, double mzzHigh=180){
 
 
   char temp[50];
-  sprintf(temp,"Z+X_data_vs_MC_vs_qqZZ_%i-%i.eps",mzzLow,mzzHigh);
+  sprintf(temp,"Z+X_data_vs_MC_vs_qqZZ_%i-%i.eps",(int)mzzLow,(int)mzzHigh);
   can->SaveAs(temp);
-  sprintf(temp,"Z+X_data_vs_MC_vs_qqZZ_%i-%i.png",mzzLow,mzzHigh);
+  sprintf(temp,"Z+X_data_vs_MC_vs_qqZZ_%i-%i.png",(int)mzzLow,(int)mzzHigh);
   can->SaveAs(temp);
 
 }
@@ -894,12 +911,12 @@ void measureSystematics(double mzzLow=130, double mzzHigh=180){
 
 void runSystematics(){
 
-  measureSystematics(double mzzLow=100, double mzzHigh=120);
-  measureSystematics(double mzzLow=120, double mzzHigh=140);
-  measureSystematics(double mzzLow=140, double mzzHigh=160);
-  measureSystematics(double mzzLow=180, double mzzHigh=220);
-  measureSystematics(double mzzLow=220, double mzzHigh=260);
-  measureSystematics(double mzzLow=260, double mzzHigh=300);
+  measureSystematics(100,120);
+  measureSystematics(120,140);
+  measureSystematics(140,160);
+  measureSystematics(180,220);
+  measureSystematics(220,260);
+  measureSystematics(260,300);
 
 }
 
