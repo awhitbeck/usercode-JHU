@@ -933,4 +933,54 @@ void runSystematics(){
 
 }
 
+// = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
+// compare channels slice by slice
+// = = = = = = = = = = = = = = = = = = = = = = = = = = = = = = 
 
+void channelCompareSlice(char* sample="signal"){
+
+  char temp[100];
+
+  sprintf(temp,"../datafiles/D%s_4mu.root",sample);
+  TFile* f4mu = new TFile(temp);
+  TH2F* tmp4mu = (TH2F*) f4mu->Get("oldTemp");
+  TH1F* h4mu;
+
+  sprintf(temp,"../datafiles/D%s_4e.root",sample);
+  TFile* f4e = new TFile(temp);
+  TH2F* tmp4e = (TH2F*) f4e->Get("oldTemp");
+  TH1F* h4e;
+
+  sprintf(temp,"../datafiles/D%s_2e2mu.root",sample);
+  TFile* f2e2mu = new TFile(temp);
+  TH2F* tmp2e2mu = (TH2F*) f2e2mu->Get("oldTemp");
+  TH1F* h2e2mu;
+
+  sprintf(temp,"channelComparison_%s",sample);
+  TCanvas* can = new TCanvas(temp,temp,400,400);
+
+
+  for(int i=41;i<108;i++){
+
+    
+    h4mu = (TH1F*) tmp4mu->ProjectionY("4mu",i,i);
+    h4mu->SetLineColor(1);
+    h4mu->Draw("");
+
+    h4e = (TH1F*) tmp4e->ProjectionY("4e",i,i);
+    h4e->SetLineColor(2);
+    h4e->Draw("SAME");
+
+    h2e2mu = (TH1F*) tmp2e2mu->ProjectionY("2e2mu",i,i);
+    h2e2mu->SetLineColor(4);
+    h2e2mu->Draw("SAME");
+   
+    if(i==41)
+      can->Print(".pdf(","pdf");
+    else 
+      can->Print(".pdf","pdf");
+  }
+  can->Print(".pdf)","pdf");
+
+
+}
