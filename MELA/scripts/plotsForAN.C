@@ -221,7 +221,7 @@ void anglesAndMasses(int index=0){
 // plots 2D heat maps of templates
 // = = = = = = = = = = = = = = = = = 
 
-void MELAtemplate(char* channel="4mu",bool lowMass=true){
+void MELAtemplate(char* channel="4mu",bool lowMass=true,bool plotSmooth=true){
 
   char fileName[150];
   sprintf(fileName,"../datafiles/Dsignal_%s.root",channel);
@@ -231,10 +231,19 @@ void MELAtemplate(char* channel="4mu",bool lowMass=true){
   sprintf(fileName,"../datafiles/Dbackground_ggZZ_%s.root",channel);
   TFile* ggZZFile = new TFile(fileName);
 
-  TH2F* sigTemplate = (TH2F*) sigFile->Get("h_mzzD");
-  TH2F* qqZZTemplate = (TH2F*) qqZZFile->Get("h_mzzD");
-  TH2F* ggZZTemplate = (TH2F*) ggZZFile->Get("h_mzzD");
-  
+  TH2F* sigTemplate ;
+  TH2F* qqZZTemplate;
+  TH2F* ggZZTemplate;
+
+  if(plotSmooth){
+    sigTemplate  = (TH2F*) sigFile->Get("h_mzzD");
+    qqZZTemplate = (TH2F*) qqZZFile->Get("h_mzzD");
+    ggZZTemplate = (TH2F*) ggZZFile->Get("h_mzzD");
+  }else{
+    sigTemplate  = (TH2F*) sigFile->Get("oldTemp");
+    qqZZTemplate = (TH2F*) qqZZFile->Get("oldTemp");
+    ggZZTemplate = (TH2F*) ggZZFile->Get("oldTemp");
+  }
   if(lowMass){
     sigTemplate->GetXaxis()->SetRangeUser(100,180);
     qqZZTemplate->GetXaxis()->SetRangeUser(100,180);
@@ -261,23 +270,23 @@ void MELAtemplate(char* channel="4mu",bool lowMass=true){
   ggZZTemplate->Draw("COL");
 
   if(lowMass)
-    sprintf(fileName,"MELAtemplateSmooth_signal_%s_lowMass.eps",channel);
+    sprintf(fileName,"MELAtemplate%s_signal_%s_lowMass.eps",(plotSmooth)?"Smooth":"",channel);
   else
-    sprintf(fileName,"MELAtemplateSmooth_signal_%s_highMass.eps",channel);
+    sprintf(fileName,"MELAtemplate%s_signal_%s_highMass.eps",(plotSmooth)?"Smooth":"",channel);
 
   canSig->SaveAs(fileName);
 
   if(lowMass)
-    sprintf(fileName,"MELAtemplateSmooth_qqZZbackground_%s_lowMass.eps",channel);
+    sprintf(fileName,"MELAtemplate%s_qqZZbackground_%s_lowMass.eps",(plotSmooth)?"Smooth":"",channel);
   else
-    sprintf(fileName,"MELAtemplateSmooth_qqZZbackground_%s_highMass.eps",channel);
+    sprintf(fileName,"MELAtemplate%s_qqZZbackground_%s_highMass.eps",(plotSmooth)?"Smooth":"",channel);
 
   canqqZZ->SaveAs(fileName);
 
   if(lowMass)
-    sprintf(fileName,"MELAtemplateSmooth_ggZZbackground_%s_lowMass.eps",channel);
+    sprintf(fileName,"MELAtemplate%s_ggZZbackground_%s_lowMass.eps",(plotSmooth)?"Smooth":"",channel);
   else
-    sprintf(fileName,"MELAtemplateSmooth_ggZZbackground_%s_highMass.eps",channel);
+    sprintf(fileName,"MELAtemplate%s_ggZZbackground_%s_highMass.eps",(plotSmooth)?"Smooth":"",channel);
 
   canggZZ->SaveAs(fileName);
 
@@ -285,14 +294,20 @@ void MELAtemplate(char* channel="4mu",bool lowMass=true){
 
 void makeAllMELAtemplate(){
 
-  MELAtemplate("4mu",false);
-  MELAtemplate("4mu",true);
+  MELAtemplate("4mu",false,true);
+  MELAtemplate("4mu",true,true);
+  MELAtemplate("4mu",false,false);
+  MELAtemplate("4mu",true,false);
   
-  MELAtemplate("4e",false);
-  MELAtemplate("4e",true);
+  MELAtemplate("4e",false,true);
+  MELAtemplate("4e",true,true);
+  MELAtemplate("4e",false,false);
+  MELAtemplate("4e",true,false);
 
-  MELAtemplate("2e2mu",false);
-  MELAtemplate("2e2mu",true);
+  MELAtemplate("2e2mu",false,true);
+  MELAtemplate("2e2mu",true,true);
+  MELAtemplate("2e2mu",false,false);
+  MELAtemplate("2e2mu",true,false);
 
 }
 
