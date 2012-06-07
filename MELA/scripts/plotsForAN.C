@@ -769,14 +769,30 @@ void measureSystematics(double mzzLow=130, double mzzHigh=180){
   // load trees 
   // ----------
   
-  TChain* CRdata = new TChain("angles");
-  CRdata->Add("../datafiles/summedCR/ZZ*AnalysisTree_Double*_4670_withDiscriminants.root");
+  TChain* CRdata = new TChain("SelectedTree");
+  CRdata->Add("../datafiles/CR/HZZ4lTree_Double*_CREEEEssTree.root");
+  CRdata->Add("../datafiles/CR/HZZ4lTree_Double*_CRMMMMssTree.root");
+  CRdata->Add("../datafiles/CR/HZZ4lTree_Double*_CREEMMssTree.root");
+  CRdata->Add("../datafiles/CR/HZZ4lTree_Double*_CRMMEEssTree.root");
+  CRdata->Add("../datafiles/CR/HZZ4lTree_Double*_CREEEEosTree.root");
+  CRdata->Add("../datafiles/CR/HZZ4lTree_Double*_CRMMMMosTree.root");
+  CRdata->Add("../datafiles/CR/HZZ4lTree_Double*_CREEMMosTree.root");
+  //CRdata->Add("../datafiles/CR/HZZ4lTree_Double*_CRMMEEosTree.root");
 
-  TChain* CRmc = new TChain("angles");
-  CRmc->Add("../datafiles/summedCR/ZZ*AnalysisTree_DYJetsToLLTuneZ2*_withDiscriminants.root");
+  TChain* CRmc = new TChain("SelectedTree");
+  CRmc->Add("../datafiles/CR/HZZ4lTree_DYJetsToLLTuneZ2*_CREEEEssTree.root");
+  CRmc->Add("../datafiles/CR/HZZ4lTree_DYJetsToLLTuneZ2*_CRMMMMssTree.root");
+  CRmc->Add("../datafiles/CR/HZZ4lTree_DYJetsToLLTuneZ2*_CREEMMssTree.root");
+  CRmc->Add("../datafiles/CR/HZZ4lTree_DYJetsToLLTuneZ2*_CRMMEEssTree.root");
+  CRmc->Add("../datafiles/CR/HZZ4lTree_DYJetsToLLTuneZ2*_CREEEEosTree.root");
+  CRmc->Add("../datafiles/CR/HZZ4lTree_DYJetsToLLTuneZ2*_CRMMMMosTree.root");
+  CRmc->Add("../datafiles/CR/HZZ4lTree_DYJetsToLLTuneZ2*_CREEMMosTree.root");
+  //CRmc->Add("../datafiles/CR/HZZ4lTree_DYJetsToLLTuneZ2*_CRMMEEosTree.root");
 
-  TChain* qqZZ = new TChain("angles");
-  qqZZ->Add("../datafiles/ZZ*AnalysisTree_ZZTo*_withDiscriminants.root");
+  TChain* qqZZ = new TChain("SelectedTree");
+  qqZZ->Add("../datafiles/4mu/HZZ4lTree_ZZTo*.root");
+  qqZZ->Add("../datafiles/4e/HZZ4lTree_ZZTo*.root");
+  qqZZ->Add("../datafiles/2mu2e/HZZ4lTree_ZZTo*.root");
 
   if( !CRmc || CRmc->GetEntries()<=0 || !CRdata || CRdata->GetEntries()<=0 || !qqZZ || qqZZ->GetEntries()<=0 ){
     cout << "problem loading files... " << endl;
@@ -787,16 +803,18 @@ void measureSystematics(double mzzLow=130, double mzzHigh=180){
   // set branches 
   // = = = = = = =
 
-  double mzz, D;
+  float mzz, D, w;
 
-  CRmc->SetBranchAddress("zzmass",&mzz);
-  CRmc->SetBranchAddress("melaLD",&D);
+  CRmc->SetBranchAddress("ZZMass",&mzz);
+  CRmc->SetBranchAddress("ZZLD",&D);
+  CRmc->SetBranchAddress("MC_weight",&w);
 
-  CRdata->SetBranchAddress("zzmass",&mzz);
-  CRdata->SetBranchAddress("melaLD",&D);
-
-  qqZZ->SetBranchAddress("zzmass",&mzz);
-  qqZZ->SetBranchAddress("melaLD",&D);
+  CRdata->SetBranchAddress("ZZMass",&mzz);
+  CRdata->SetBranchAddress("ZZLD",&D);
+  
+  qqZZ->SetBranchAddress("ZZMass",&mzz);
+  qqZZ->SetBranchAddress("ZZLD",&D);
+  qqZZ->SetBranchAddress("MC_weight",&w);
 
   // = = = = = = = = = = = 
   // initialize histograms 
@@ -809,6 +827,8 @@ void measureSystematics(double mzzLow=130, double mzzHigh=180){
   TH1F* h_qqZZ = new TH1F("h_qqZZ",";MELA;",30,0,1);
   h_qqZZ->Sumw2();
 
+  /*
+
   TCanvas* can = new TCanvas("can","can",400,550);
   TPad* pad2 = new TPad("pad2","pad2",0.,0.,1.,0.3);
   TPad* pad1 = new TPad("pad1","pad1",0.,0.3,1.,1.);
@@ -816,6 +836,10 @@ void measureSystematics(double mzzLow=130, double mzzHigh=180){
   
   pad1->Draw();
   pad2->Draw();
+
+  */
+
+  TCanvas* can = new TCanvas("can","can",400,400);
 
   // = = = = = =
   // fill histos
@@ -828,7 +852,7 @@ void measureSystematics(double mzzLow=130, double mzzHigh=180){
     qqZZ->GetEntry(iEvt);
 
     if(mzz>mzzLow&&mzz<mzzHigh){
-      h_qqZZ->Fill(D);
+      h_qqZZ->Fill(D,w);
     }
     
   }
@@ -839,7 +863,7 @@ void measureSystematics(double mzzLow=130, double mzzHigh=180){
     CRmc->GetEntry(iEvt);
 
     if(mzz>mzzLow&&mzz<mzzHigh){
-      h_CRmc->Fill(D);
+      h_CRmc->Fill(D,w);
     }
     
   }
@@ -859,7 +883,7 @@ void measureSystematics(double mzzLow=130, double mzzHigh=180){
   // draw histos
   // = = = = = = 
 
-  pad1->cd();
+  //pad1->cd();
 
   h_qqZZ->Scale(h_CRdata->Integral()/h_qqZZ->Integral());
   h_qqZZ->SetLineColor(4);
@@ -889,11 +913,13 @@ void measureSystematics(double mzzLow=130, double mzzHigh=180){
   TLegend* leg = new TLegend(.5,.6,.90,.90);
   leg->SetFillColor(0);
   leg->SetBorderSize(0);
-  leg->AddEntry(h_CRdata,"Z+X 2P+2F SS (data)","lp");
-  leg->AddEntry(h_CRmc,"Z+X 2P+2F OS (data)","l");
-  //leg->AddEntry(h_qqZZ,"qqZZ (Powheg MC)","l");
+  leg->AddEntry(h_CRdata,"Z+X 2P+2F (data)","lp");
+  leg->AddEntry(h_CRmc,"Z+X 2P+2F (Madgraph MC)","l");
+  leg->AddEntry(h_qqZZ,"qqZZ (Powheg MC)","l");
   
   leg->Draw();
+
+  /*
 
   // ------------ RATIO PAD ---------------
 
@@ -919,11 +945,13 @@ void measureSystematics(double mzzLow=130, double mzzHigh=180){
   ratio_CRdata->Fit("fline","");
   //gStyle->SetOptFit(0);
 
+  cout << " done with fits drawing CRmc and qqZZ " << endl;
+
   ratio_CRmc->Draw("EhistSAME");
   ratio_qqZZ->Draw("EhistSAME");
 
   // -------------------------------------
-
+  */
 
   char temp[50];
   sprintf(temp,"Z+X_data_vs_MC_vs_qqZZ_%i-%i.eps",(int)mzzLow,(int)mzzHigh);
@@ -939,12 +967,26 @@ void measureSystematics(double mzzLow=130, double mzzHigh=180){
 
 void runSystematics(){
 
+  measureSystematics(100,110);
+  measureSystematics(110,120);
+  measureSystematics(120,130);
+  measureSystematics(130,140);
+  measureSystematics(140,150);
+  measureSystematics(150,160);
+  measureSystematics(160,170);
+  measureSystematics(170,180);
+  measureSystematics(100,180);
+
+  /*
   measureSystematics(100,120);
   measureSystematics(120,140);
   measureSystematics(140,160);
+  measureSystematics(160,180);
   measureSystematics(180,220);
   measureSystematics(220,260);
   measureSystematics(260,300);
+  */
+
 
 }
 
@@ -999,3 +1041,4 @@ void channelCompareSlice(char* sample="signal"){
 
 
 }
+
