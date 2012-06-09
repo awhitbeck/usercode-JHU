@@ -836,6 +836,11 @@ TH2F* reweightForInterference(TH2F* temp){
 }
 
 //=======================================================================
+// builds templates taking fileName from user (wild cards allowed)
+//
+// channel=4mu,4e,2e2mu
+// sample=H*, ZZTo*, ggZZ*
+//=======================================================================
 
 void storeLDDistribution(bool signal,char* fileName, char* tag,bool smooth=true){
 
@@ -917,7 +922,7 @@ void storeLDDistribution(bool signal,char* fileName, char* tag,bool smooth=true)
 // sample=H*, ZZTo*, ggZZ*
 //=======================================================================
 
-void storeLDDistributionV2(char* channel="4mu",int sampleIndex=1,bool smooth=true){
+void storeLDDistributionV2(char* channel="4mu",int sampleIndex=1, char* dir="../datafiles/", bool smooth=true){
 
   string sample[3]={"H*","ZZTo*","ggZZ*"};
   string tag[3]={"","qqZZ","ggZZ"};
@@ -925,8 +930,8 @@ void storeLDDistributionV2(char* channel="4mu",int sampleIndex=1,bool smooth=tru
   char singalFile[100];
   char combFile[100];
 
-  sprintf(singalFile,"../datafiles/HZZ%sTree_%s.root",channel,sample[sampleIndex].c_str());
-  sprintf(combFile,"../datafiles/HZZ*Tree_%s.root",sample[sampleIndex].c_str());
+  sprintf(singalFile,"%s/HZZ%sTree_%s.root",dir,channel,sample[sampleIndex].c_str());
+  sprintf(combFile,"%s/HZZ*Tree_%s.root",dir,sample[sampleIndex].c_str());
     
   cout << singalFile << endl;
   cout << combFile << endl;
@@ -1019,7 +1024,7 @@ void storeLDDistributionV2(char* channel="4mu",int sampleIndex=1,bool smooth=tru
     h_mzzD = smoothTemplate(h_mzzD,h_numEvents);
 
   pair<TH2F*,TH2F*> histoPair;
-  if(!signal){
+  if(sampleIndex>0){
     cout << "adding background syst" << endl;
     histoPair = reweightForCRunc(h_mzzD);
   }else{
