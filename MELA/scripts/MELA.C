@@ -311,11 +311,7 @@ void addDtoTree(char* inputFile){
 
 //=======================================================================
 
-vector<TH1F*> LDDistributionBackground(char* fileName="../datafiles/7TeV/training/EWKZZ4l_Powheg_mZ4GeV_total_v25_wResolution_withDiscriminants.root"){
-
-  TChain* chain = new TChain("SelectedTree");
-
-  chain->Add(fileName);
+vector<TH1F*> LDDistributionBackground(TTree* chain){
 
   float mZZ, m2, m1, costhetastar, costheta1, costheta2, phi, phi1;
   float MC_weight=1;
@@ -386,10 +382,7 @@ vector<TH1F*> LDDistributionBackground(char* fileName="../datafiles/7TeV/trainin
 
 
 //=======================================================================
-vector<TH1F*> LDDistributionSignal(char* fileName="../datafiles/7TeV/testBuildModel/SMHiggs_115_JHU_v0_wResolution_withDiscriminants.root"){
-
-  TChain* chain = new TChain("SelectedTree");
-  chain->Add(fileName);
+vector<TH1F*> LDDistributionSignal(TTree* chain){
  
   float mZZ, m2, m1, costhetastar, costheta1, costheta2, phi, phi1;
   float MC_weight=1;
@@ -851,12 +844,15 @@ void storeLDDistribution(bool signal,char* fileName, char* tag,bool smooth=true)
   TFile *file;
   char temp[50];
 
+  TChain* chain = new TChain("SelectedTree");
+  chain->Add(fileName);
+
   if(signal){
-    vh_LD = LDDistributionSignal(fileName);
+    vh_LD = LDDistributionSignal(chain);
     sprintf(temp,"../datafiles/Dsignal_%s.root",tag);
     file= new TFile(temp,"recreate");
   }else{
-    vh_LD = LDDistributionBackground(fileName);
+    vh_LD = LDDistributionBackground(chain);
     sprintf(temp,"../datafiles/Dbackground_%s.root",tag);
     file= new TFile(temp,"recreate");
   }
@@ -922,16 +918,26 @@ void storeLDDistribution(bool signal,char* fileName, char* tag,bool smooth=true)
 // sample=H*, ZZTo*, ggZZ*
 //=======================================================================
 
-void storeLDDistributionV2(char* channel="4mu",int sampleIndex=1, char* dir="../datafiles/", bool smooth=true){
+void storeLDDistributionV2(char* channel="4mu",int sampleIndex=1, char* dir="/tmp/whitbeck/", bool smooth=true){
 
   string sample[3]={"H*","ZZTo*","ggZZ*"};
   string tag[3]={"","qqZZ","ggZZ"};
+
+  TChain* singalTree = new TChain("SelectedTree");
+  TChain* combTree = new TChain("SelectedTree");
 		    
   char singalFile[100];
   char combFile[100];
 
-  sprintf(singalFile,"%s/HZZ%sTree_%s.root",dir,channel,sample[sampleIndex].c_str());
-  sprintf(combFile,"%s/HZZ*Tree_%s.root",dir,sample[sampleIndex].c_str());
+  sprintf(singalFile,"%s/7TeV_FSR/HZZ%sTree_%s.root",dir,channel,sample[sampleIndex].c_str());
+  singalTree->Add(singalFile);
+  sprintf(singalFile,"%s/8TeV_FSR/HZZ%sTree_%s.root",dir,channel,sample[sampleIndex].c_str());
+  singalTree->Add(singalFile);
+
+  sprintf(combFile,"%s/7TeV_FSR/HZZ*Tree_%s.root",dir,sample[sampleIndex].c_str());
+  combTree->Add(combFile);
+  sprintf(combFile,"%s/8TeV_FSR/HZZ*Tree_%s.root",dir,sample[sampleIndex].c_str());
+  combTree->Add(combFile);
     
   cout << singalFile << endl;
   cout << combFile << endl;
@@ -945,13 +951,13 @@ void storeLDDistributionV2(char* channel="4mu",int sampleIndex=1, char* dir="../
   char temp[50];
 
   if(sampleIndex==0){
-    vh_LD_lowmass  = LDDistributionSignal(singalFile);
-    vh_LD_highmass = LDDistributionSignal(combFile);
+    vh_LD_lowmass  = LDDistributionSignal(singalTree);
+    vh_LD_highmass = LDDistributionSignal(combTree);
     sprintf(temp,"../datafiles/Dsignal_%s.root",channel);
     file= new TFile(temp,"recreate");
   }else{
-    vh_LD_lowmass  = LDDistributionBackground(singalFile);
-    vh_LD_highmass = LDDistributionBackground(combFile);
+    vh_LD_lowmass  = LDDistributionBackground(singalTree);
+    vh_LD_highmass = LDDistributionBackground(combTree);
     sprintf(temp,"../datafiles/Dbackground_%s_%s.root",tag[sampleIndex].c_str(),channel);
     file= new TFile(temp,"recreate");
   }
@@ -1077,89 +1083,6 @@ void makeAllTemplatesV2(){
 
   
 }
-
-//=======================================================================
-void genMELApdf(bool isSig=true){
-
-  TFile* inputTempFile;
-  if(isSig)
-    inputTempFile = new TFile("../datafiles/Dsignal.root");
-  else
-    inputTempFile = new TFile("../datafiles/Dbackground.root");
-
-  TH2F* mzzDTemplate;
-  if(inputTempFile)
-    mzzDTemplate = (TH2F*) inputTempFile->Get("h_mzzD");
-
-  if(!inputTempFile)
-    return;
-
-  double integral[mZZbins];
-  double checkInt;
-  string lines="";
-  stringstream convert;
-
-  //=====================================                                                                                                    
-  // apply norm and write to file                                                                                                            
-  //=====================================                                                                                                    
-
-  for(int i=0; i<mZZbins; i++){
-    checkInt=0;
-    for(int j=0; j<100; j++){
-
-      lines+=" PmzzD[";
-      convert << i;
-      lines+=convert.str()+"][";
-      convert.str("");
-      convert << j;
-      lines+=convert.str()+"]=";
-      convert.str("");
-      if(integral[i]>0){
-        convert << (double)mzzDTemplate->GetBinContent(i+1,j+1);
-        checkInt+=(double)mzzDTemplate->GetBinContent(i+1,j+1)/integral[i];
-      }
-      else
-        convert << 0.00;
-      lines+=convert.str()+";  ";
-      convert.str("");
-
-      if(j%10==0)
-        lines+="\n";
-
-    }
-
-  }
-  ifstream templateFile;
-  if(isSig)
-    templateFile.open("../PDFs/RooMELAModelSig.tpl");
-  else
-    templateFile.open("../PDFs/RooMELAModelBkg.tpl");
-  string templateLine="";
-  ofstream newFile;
-  if(isSig)
-    newFile.open("../PDFs/RooMELAModelSig.cc",ios::out);
-  else
-    newFile.open("../PDFs/RooMELAModelBkg.cc",ios::out);
-
-  while(templateFile.good() && !templateFile.eof()){
-
-    getline(templateFile,templateLine);
-    size_t found=templateLine.find("<INSERT ARRAY>");
-
-    if(found!=string::npos){
-      newFile << lines  << endl;
-    }else{
-      newFile << templateLine << endl;
-    }
-
-  }
-
-  templateFile.close();
-  newFile.close();
-
-}
-
-//=======================================================================
 
 void calculateAngles(TLorentzVector thep4H, TLorentzVector thep4Z1, TLorentzVector thep4Lep11, TLorentzVector thep4Lep12, TLorentzVector thep4Z2, TLorentzVector thep4Lep21, TLorentzVector thep4Lep22, double& costheta1, double& costheta2, double& phi, double& costhetastar, double& phistar1, double& phistar2, double& phistar12, double& phi1, double& phi2){
 	
