@@ -9,7 +9,8 @@
 #include "TCanvas.h"
 #include <sstream>
 #include <vector>
-#include "../src/AngularPdfFactory.cc"
+//#include "../src/AngularPdfFactory.cc"
+#include "../src/pseudoMELA.cc"
 #include "../PDFs/RooqqZZ_JHU.h"
 
 #include "MELA.h"
@@ -226,6 +227,8 @@ void addDtoTree(char* inputFile){
 
   RooMsgService::instance().getStream(1).removeTopic(NumIntegration);
 
+  pseudoMELA pseudoMELAcalculator;
+
   char inputFileName[100];
   char outputFileName[150];
   sprintf(inputFileName,"%s.root",inputFile);
@@ -243,25 +246,26 @@ void addDtoTree(char* inputFile){
   TFile* newFile = new TFile(outputFileName,"RECREATE");
   TTree* newTree = new TTree("newTree","angles"); 
 
-  double m1,m2,mzz,h1,h2,hs,phi,phi1,D;
+  float m1,m2,mzz,h1,h2,hs,phi,phi1,D,psD;
   sigTree->SetBranchAddress("Z1Mass",&m1);
   sigTree->SetBranchAddress("Z2Mass",&m2);
   sigTree->SetBranchAddress("ZZMass",&mzz);
-  sigTree->SetBranchAddress("costheta1",&h1); 
-  sigTree->SetBranchAddress("costheta2",&h2);
+  sigTree->SetBranchAddress("helcosthetaZ1",&h1); 
+  sigTree->SetBranchAddress("helcosthetaZ2",&h2);
   sigTree->SetBranchAddress("costhetastar",&hs);
-  sigTree->SetBranchAddress("phi",&phi);  
-  sigTree->SetBranchAddress("phistar1",&phi1);
+  sigTree->SetBranchAddress("helphi",&phi);  
+  sigTree->SetBranchAddress("helphiZ1",&phi1);
 
-  newTree->Branch("z1mass",&m1,"z1mass/D");
-  newTree->Branch("z2mass",&m2,"z2mass/D");
-  newTree->Branch("zzmass",&mzz,"zzmass/D");
-  newTree->Branch("costheta1",&h1,"costheta1/D"); 
-  newTree->Branch("costheta2",&h2,"costheta2/D");
-  newTree->Branch("costhetastar",&hs,"costhetastar/D");
-  newTree->Branch("phi",&phi,"phi/D");  
-  newTree->Branch("phistar1",&phi1,"phistar1/D");
-  newTree->Branch("melaLD",&D,"melaLD/D");  
+  newTree->Branch("z1mass",&m1,"z1mass/F");
+  newTree->Branch("z2mass",&m2,"z2mass/F");
+  newTree->Branch("zzmass",&mzz,"zzmass/F");
+  newTree->Branch("costheta1",&h1,"costheta1/F"); 
+  newTree->Branch("costheta2",&h2,"costheta2/F");
+  newTree->Branch("costhetastar",&hs,"costhetastar/F");
+  newTree->Branch("phi",&phi,"phi/F");  
+  newTree->Branch("phistar1",&phi1,"phistar1/F");
+  newTree->Branch("melaLD",&D,"melaLD/F");  
+  newTree->Branch("pseudomelaLD",&psD,"pseudomelaLD/F");  
 
   for(int iEvt=0; iEvt<sigTree->GetEntries(); iEvt++){
 
@@ -270,7 +274,7 @@ void addDtoTree(char* inputFile){
 
     sigTree->GetEntry(iEvt);
 
-    checkZorder<double>(m1,m2,hs,h1,h2,phi,phi1);
+    checkZorder<float>(m1,m2,hs,h1,h2,phi,phi1);
 
     cout << "costheta1: " << h1 << " costheta2: " << h2 << endl;
 
@@ -281,7 +285,7 @@ void addDtoTree(char* inputFile){
       pair<double,double> P = likelihoodDiscriminant(mzz, m1, m2, hs, h1, h2, phi, phi1);
       D=P.first/(P.first+P.second);
 
-      cout << "MELA: " << D << endl;
+      psD = pseudoMELAcalculator.eval(mzz,m1,m2,hs,h1,h2,phi,phi1);
 
       newTree->Fill();
 
