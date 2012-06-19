@@ -171,7 +171,7 @@ pair<double,double> likelihoodDiscriminant (double mZZ, double m1, double m2, do
   AngularPdfFactory *SMHiggs = new AngularPdfFactory(z1mass_rrv,z2mass_rrv,costheta1_rrv,costheta2_rrv,phi_rrv,mzz_rrv);
   SMHiggs->makeSMHiggs();
   SMHiggs->makeParamsConst(true);
-
+  RooqqZZ_JHU* SMZZ = new RooqqZZ_JHU("SMZZ","SMZZ",*z1mass_rrv,*z2mass_rrv,*costheta1_rrv,*costheta2_rrv,*phi_rrv,*costhetastar_rrv,*phi1_rrv,*mzz_rrv);
 
   checkZorder<double>(m1,m2,costhetastar,costheta1,costheta2,phi,phi1);
 
@@ -751,9 +751,6 @@ pair<TH2F*,TH2F*> applySystUncForInterference(TH2F* temp){
 //=======================================================================
 TH2F* reweightForInterference(TH2F* temp){
 
-
-  cout << "I AM REWEIGHTING!!!!!!" << endl;
-
   // for interference reweighting
   TF1* gauss = new TF1("gauss","gaus",100,1000);
 
@@ -787,13 +784,15 @@ TH2F* reweightForInterference(TH2F* temp){
       newTempValue = oldTempValue*(1+slope*((double)j/30.-.5));
       newTemp->SetBinContent(i,j,newTempValue);
 
+
+      /*
       if(i<20){
 	cout << "---------------------------------" << endl;
 	cout << "scaling factor: " << (1+slope*((double)j/30.-.5)) << endl;
 	cout << "old value: "  << oldTempValue << endl;
 	cout << "new value: "  << newTempValue << endl;
       }
-
+      */
 
     }// end loop over Y bins
 
@@ -810,8 +809,6 @@ TH2F* reweightForInterference(TH2F* temp){
     // ---------------------------------------------------
 
   }// end loop over X bins
-
-  cout << "newTemp: " << newTemp << endl;
 
   return newTemp;
 
@@ -1050,10 +1047,10 @@ TH2F* fillTemplate(char* channel="4mu", int sampleIndex=0,bool isLowMass=true){
   TChain* bkgMC = new TChain("SelectedTree");
   char temp[100];
   if(isLowMass){
-    sprintf(temp,"/tmp/whitbeck/7plus8TeV_FSR/HZZ%sTree_%s.root",channel,sample[sampleIndex].c_str());
+    sprintf(temp,"CJLSTtrees_June10_2012/7plus8TeV_FSR/HZZ%sTree_%s.root",channel,sample[sampleIndex].c_str());
     bkgMC->Add(temp);
   }else{
-    sprintf(temp,"/tmp/whitbeck/7plus8TeV_FSR/HZZ*Tree_%s.root",sample[sampleIndex].c_str());
+    sprintf(temp,"CJLSTtrees_June10_2012/7plus8TeV_FSR/HZZ*Tree_%s.root",sample[sampleIndex].c_str());
   }
 
   bkgMC->Add(temp);
@@ -1143,14 +1140,6 @@ TH2F* fillTemplate(char* channel="4mu", int sampleIndex=0,bool isLowMass=true){
   bkgHist->Smooth();
   if(!isLowMass)
     bkgHist->Smooth();
-
-  // get fitted template
-
-  sprintf(temp,"../../../7plus8_TeV_FSR/MELA/datafiles/Dbackground_qqZZ_%s.root",channel);
-  TFile *fTemp = new TFile(temp);
-  TH2F* fitTemp = (TH2F*) fTemp->Get("h_mzzD");
-  
-  //fitTemp->Smooth();
 
   // draw
 
