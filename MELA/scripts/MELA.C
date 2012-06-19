@@ -54,8 +54,6 @@ TH1F* mzzBinning = new TH1F("mzzBinning","mzzBinning",350,100,800);
 TFile *tempf = new TFile("../datafiles/my8DTemplateNotNorm.root","READ");
 
 
-
-
 template <typename U>
 void checkZorder(U& z1mass, U& z2mass,
                  U& costhetastar, U& costheta1,
@@ -173,7 +171,7 @@ pair<double,double> likelihoodDiscriminant (double mZZ, double m1, double m2, do
   AngularPdfFactory *SMHiggs = new AngularPdfFactory(z1mass_rrv,z2mass_rrv,costheta1_rrv,costheta2_rrv,phi_rrv,mzz_rrv);
   SMHiggs->makeSMHiggs();
   SMHiggs->makeParamsConst(true);
-  RooqqZZ_JHU* SMZZ = new RooqqZZ_JHU("SMZZ","SMZZ",*z1mass_rrv,*z2mass_rrv,*costheta1_rrv,*costheta2_rrv,*phi_rrv,*costhetastar_rrv,*phi1_rrv,*mzz_rrv);
+
 
   checkZorder<double>(m1,m2,costhetastar,costheta1,costheta2,phi,phi1);
 
@@ -317,13 +315,6 @@ vector<TH1F*> LDDistributionBackground(TTree* chain){
   float MC_weight=1;
   float mela=-99;
   chain->SetBranchAddress("ZZMass",&mZZ);
-  chain->SetBranchAddress("Z2Mass",&m2);
-  chain->SetBranchAddress("Z1Mass",&m1);
-  chain->SetBranchAddress("costhetastar",&costhetastar);
-  chain->SetBranchAddress("phi",&phi);
-  chain->SetBranchAddress("costheta1",&costheta1);
-  chain->SetBranchAddress("costheta2",&costheta2);
-  chain->SetBranchAddress("phistar1",&phi1);
   chain->SetBranchAddress("MC_weight_noxsec",&MC_weight);  
   chain->SetBranchAddress("ZZLD",&mela);
 
@@ -388,13 +379,6 @@ vector<TH1F*> LDDistributionSignal(TTree* chain){
   float MC_weight=1;
   float mela=-99;
   chain->SetBranchAddress("ZZMass",&mZZ);
-  chain->SetBranchAddress("Z2Mass",&m2);
-  chain->SetBranchAddress("Z1Mass",&m1);
-  chain->SetBranchAddress("costhetastar",&costhetastar);
-  chain->SetBranchAddress("phi",&phi);
-  chain->SetBranchAddress("costheta1",&costheta1);
-  chain->SetBranchAddress("costheta2",&costheta2);
-  chain->SetBranchAddress("phistar1",&phi1);
   chain->SetBranchAddress("MC_weight_noxsec",&MC_weight);
   chain->SetBranchAddress("ZZLD",&mela);
 
@@ -701,6 +685,13 @@ pair<TH2F*,TH2F*> reweightForCRunc(TH2F* temp){
 //=======================================================================
 pair<TH2F*,TH2F*> applySystUncForInterference(TH2F* temp){
 
+  // for interference reweighting
+  TF1* gauss = new TF1("gauss","gaus",100,1000);
+
+  gauss->SetParameter(0,0.354258);
+  gauss->SetParameter(1,114.909);
+  gauss->SetParameter(2,17.1512);
+
   TH2F* tempUp = new TH2F(*temp);
   TH2F* tempDn = new TH2F(*temp);
   
@@ -712,35 +703,24 @@ pair<TH2F*,TH2F*> applySystUncForInterference(TH2F* temp){
   
   double oldTempValue=0;
   double newTempValue=0;
-  int point=-1;
 
-  const int numPoints=9;
-
-  double low[numPoints]   ={100.,        122.,        128.,        135.,        145.,        155.,        165.,         175.,        185.0}; 
-  double high[numPoints]  ={122.,        128.,        135.,        145.,        155.,        165.,        175.,         185.,        1000.0}; 
-  double slope[numPoints] ={3.41629e-01, 3.02312e-01, 2.41973e-01, 1.16892e-01, 4.91500e-02, 3.08193e-02, -6.77412e-02, 1.13210e-02, 0.0 }; // R = yIntr+slope*D
-  double yIntr[numPoints] ={8.39142e-01, 8.55536e-01, 8.87408e-01, 9.39391e-01, 9.75200e-01, 9.90251e-01,  1.03383e+00, 9.39441e-01, 1.0 }; //
+  double slope;
 
   for(int i=1; i<=temp->GetNbinsX(); i++){
-    point = -1;
 
     // choose correct scale factor
-    for(int p=0; p<numPoints; p++){
-      if( (i*2.+101.)>=low[p] && (i*2.+101.)<high[p] ){
-	point = p;
-      }
-    }
-    if(point == -1){
-      cout << "ERROR: could not find correct scale factor"<< endl;
-      return histoPair;
+    if(i<8){
+      slope=.354;
+    }else{
+      slope=gauss->Eval((double)((i-1)*2+101));
     }
 
     for(int j=1; j<=temp->GetNbinsY(); j++){
       
       oldTempValue = temp->GetBinContent(i,j);
-      newTempValue = oldTempValue*(slope[point]*(double)j/30.+yIntr[point]);
+      newTempValue = oldTempValue*(1+slope*((double)j/30.-.5));
       tempUp->SetBinContent(i,j,newTempValue);
-      newTempValue = oldTempValue*(-slope[point]*(double)j/30.+2.-yIntr[point]);
+      newTempValue = oldTempValue*(1-slope*((double)j/30.-.5));
       tempDn->SetBinContent(i,j,newTempValue);
 
     }// end loop over Y bins
@@ -771,6 +751,16 @@ pair<TH2F*,TH2F*> applySystUncForInterference(TH2F* temp){
 //=======================================================================
 TH2F* reweightForInterference(TH2F* temp){
 
+
+  cout << "I AM REWEIGHTING!!!!!!" << endl;
+
+  // for interference reweighting
+  TF1* gauss = new TF1("gauss","gaus",100,1000);
+
+  gauss->SetParameter(0,0.354258);
+  gauss->SetParameter(1,114.909);
+  gauss->SetParameter(2,17.1512);
+
   TH2F* newTemp = new TH2F(*temp);
   
   // ---------------------
@@ -779,34 +769,31 @@ TH2F* reweightForInterference(TH2F* temp){
   
   double oldTempValue=0;
   double newTempValue=0;
-  int point=-1;
 
-  const int numPoints=9;
-
-  double low[numPoints]   ={100.,        122.,        128.,        135.,        145.,        155.,        165.,         175.,        185.0}; 
-  double high[numPoints]  ={122.,        128.,        135.,        145.,        155.,        165.,        175.,         185.,        1000.0}; 
-  double slope[numPoints] ={3.41629e-01, 3.02312e-01, 2.41973e-01, 1.16892e-01, 4.91500e-02, 3.08193e-02, -6.77412e-02, 1.13210e-02, 0.0 }; // R = yIntr+slope*D
-  double yIntr[numPoints] ={8.39142e-01, 8.55536e-01, 8.87408e-01, 9.39391e-01, 9.75200e-01, 9.90251e-01,  1.03383e+00, 9.39441e-01, 1.0 }; //
+  double slope;
 
   for(int i=1; i<=temp->GetNbinsX(); i++){
-    point = -1;
 
     // choose correct scale factor
-    for(int p=0; p<numPoints; p++){
-      if( (i*2.+101.)>=low[p] && (i*2.+101.)<high[p] ){
-	point = p;
-      }
+    if(i<8){
+      slope=.354;
+    }else{
+      slope=gauss->Eval((double)((i-1)*2+101));
     }
-    if(point == -1){
-      cout << "ERROR: could not find correct scale factor"<< endl;
-      return newTemp;
-    }
-
+    
     for(int j=1; j<=temp->GetNbinsY(); j++){
       
       oldTempValue = temp->GetBinContent(i,j);
-      newTempValue = oldTempValue*(slope[point]*(double)j/30.+yIntr[point]);
+      newTempValue = oldTempValue*(1+slope*((double)j/30.-.5));
       newTemp->SetBinContent(i,j,newTempValue);
+
+      if(i<20){
+	cout << "---------------------------------" << endl;
+	cout << "scaling factor: " << (1+slope*((double)j/30.-.5)) << endl;
+	cout << "old value: "  << oldTempValue << endl;
+	cout << "new value: "  << newTempValue << endl;
+      }
+
 
     }// end loop over Y bins
 
@@ -823,6 +810,8 @@ TH2F* reweightForInterference(TH2F* temp){
     // ---------------------------------------------------
 
   }// end loop over X bins
+
+  cout << "newTemp: " << newTemp << endl;
 
   return newTemp;
 
@@ -898,7 +887,8 @@ void storeLDDistribution(bool signal,char* fileName, char* tag,bool smooth=true)
   if(!signal)
     histoPair = reweightForCRunc(h_mzzD);
   else{
-    h_mzzD = reweightForInterference(h_mzzD);  // correct templates for lepton interference
+    if(strcmp(tag,"2e2mu"))
+      h_mzzD = reweightForInterference(h_mzzD);  // correct templates for lepton interference
     histoPair = applySystUncForInterference(h_mzzD);   // apply systematic unc for lepton interference
   }
 
@@ -1035,7 +1025,8 @@ void storeLDDistributionV2(char* channel="4mu",int sampleIndex=1, char* dir="/tm
     histoPair = reweightForCRunc(h_mzzD);
   }else{
     cout << "correcting for interference and adding syst" << endl;
-    h_mzzD = reweightForInterference(h_mzzD);  // correct templates for lepton interference
+    if(strcmp(channel,"2e2mu"))
+      h_mzzD = reweightForInterference(h_mzzD);  // correct templates for lepton interference
     histoPair = applySystUncForInterference(h_mzzD);   // apply systematic unc for lepton interference
   }
 
@@ -1047,6 +1038,277 @@ void storeLDDistributionV2(char* channel="4mu",int sampleIndex=1, char* dir="/tm
   file->Close();
 
 }
+
+//=======================================================================
+
+TH2F* fillTemplate(char* channel="4mu", int sampleIndex=0,bool isLowMass=true){
+
+  string sample[3]={"H*","ZZTo*","ggZZ*"};
+  string sampleName[3]={"signal","qqZZ","ggZZ"};
+
+
+  TChain* bkgMC = new TChain("SelectedTree");
+  char temp[100];
+  if(isLowMass){
+    sprintf(temp,"/tmp/whitbeck/7plus8TeV_FSR/HZZ%sTree_%s.root",channel,sample[sampleIndex].c_str());
+    bkgMC->Add(temp);
+  }else{
+    sprintf(temp,"/tmp/whitbeck/7plus8TeV_FSR/HZZ*Tree_%s.root",sample[sampleIndex].c_str());
+  }
+
+  bkgMC->Add(temp);
+
+  float mzz,D,w;
+
+  bkgMC->SetBranchAddress("ZZMass",&mzz);
+  bkgMC->SetBranchAddress("ZZLD",&D);
+  bkgMC->SetBranchAddress("MC_weight",&w);
+
+  TH2F* bkgHist;
+  if(!isLowMass)
+    bkgHist = new TH2F("bkgHisto","bkgHisto",310,180,800,30,0,1);
+  else
+    bkgHist = new TH2F("bkgHisto","bkgHisto",40,100,180,30,0,1);
+
+  bkgHist->Sumw2();
+
+  // fill histogram
+
+  for(int i=0; i<bkgMC->GetEntries(); i++){
+
+    bkgMC->GetEntry(i);
+
+    if(w<.0015)
+      bkgHist->Fill(mzz,D,w);
+
+  }
+
+  // normalize slices
+
+  double norm;
+  TH1F* tempProj;
+
+  for(int i=1; i<=350; i++){
+
+    tempProj = (TH1F*) bkgHist->ProjectionY("tempProj",i,i);
+    norm=tempProj->Integral();
+
+    for(int j=1; j<=30; j++){
+      bkgHist->SetBinContent(i,j, bkgHist->GetBinContent(i,j)/norm   );
+    }
+
+  }
+  
+  // average 
+
+  TH2F* notSmooth = new TH2F(*bkgHist);
+
+  if(!isLowMass){
+    
+    int nXbins=(isLowMass)?40:310;
+    int nYbins=30;
+    int binMzz;
+    int effectiveArea=1;
+    
+    double average=0,binsUsed=0;
+    
+    for(int i=1; i<=nXbins; i++){
+      for(int j=1; j<=nYbins; j++){
+	
+	binMzz=(i-1)*2+181;
+
+	if( binMzz<300 ) continue;
+	if( binMzz>=300 && binMzz<350 ) effectiveArea=1;
+	if( binMzz>=350 && binMzz<500 ) effectiveArea=3;
+	if( binMzz>=500 && binMzz<600 ) effectiveArea=5;
+	if( binMzz>=600 ) effectiveArea=7;
+	
+	for(int a=-effectiveArea; a<=effectiveArea; a++){
+	  if(a+i<1 || a+i>310 || j>30 || j<1) continue;
+	  average+= notSmooth->GetBinContent(a+i,j);
+	  binsUsed++;
+	}
+	
+	bkgHist->SetBinContent(i,j,average/binsUsed);
+
+	average=0;
+	binsUsed=0;
+	
+      } // end loop over D
+    } // end loop over mZZ
+  } // end of horizontal averaging
+
+  // smooth
+
+  bkgHist->Smooth();
+  if(!isLowMass)
+    bkgHist->Smooth();
+
+  // get fitted template
+
+  sprintf(temp,"../../../7plus8_TeV_FSR/MELA/datafiles/Dbackground_qqZZ_%s.root",channel);
+  TFile *fTemp = new TFile(temp);
+  TH2F* fitTemp = (TH2F*) fTemp->Get("h_mzzD");
+  
+  //fitTemp->Smooth();
+
+  // draw
+
+  TCanvas* can = new TCanvas("can","can",800,400);
+  can->Divide(2,1);
+  
+  can->cd(1);
+  bkgHist->Draw("COLZ");
+  can->cd(2);
+  notSmooth->Draw("COLZ");
+  
+  if(isLowMass)
+    sprintf(temp,"MELAtemplates_smooth_vs_nonSmooth_%s_%s_lowmass.eps",sampleName[sampleIndex].c_str(),channel);
+  else
+    sprintf(temp,"MELAtemplates_smooth_vs_nonSmooth_%s_%s_highmass.eps",sampleName[sampleIndex].c_str(),channel);
+
+  can->SaveAs(temp);
+
+  if(isLowMass)
+    sprintf(temp,"MELAtemplates_smooth_vs_nonSmooth_%s_%s_lowmass.png",sampleName[sampleIndex].c_str(),channel);
+  else
+    sprintf(temp,"MELAtemplates_smooth_vs_nonSmooth_%s_%s_highmass.png",sampleName[sampleIndex].c_str(),channel);
+
+  can->SaveAs(temp);
+
+  return bkgHist;
+  
+}
+
+//=======================================================================
+
+TH2F* mergeTemplates(TH2F* lowTemp, TH2F* highTemp){
+  
+  TH2F* h_mzzD = new TH2F("h_mzzD","h_mzzD",350,100,800,30,0,1);
+  
+  // copy lowmass into h_mzzD
+  for(int i=1; i<=40; i++){
+    for(int j=1; j<=30; j++){
+      h_mzzD->SetBinContent(i,j, lowTemp->GetBinContent(i,j)  );
+    }// end loop over D
+  }// end loop over mZZ
+
+  // copy high mass into h_mzzD
+  for(int i=1; i<=310; i++){
+    for(int j=1; j<=30; j++){
+      h_mzzD->SetBinContent(i+40,j, highTemp->GetBinContent(i,j)  );
+    }// end loop over D
+  }// end loop over mZZ
+
+  return h_mzzD;
+
+}
+
+//=======================================================================
+
+void makeTemplate(char* channel="4mu"){
+
+  char temp[150];
+
+  sprintf(temp,"Dsignal_%s.root",channel);
+  TFile* fsig = new TFile(temp,"RECREATE");
+  sprintf(temp,"Dbackground_qqZZ_%s.root",channel);
+  TFile* fqqZZ = new TFile(temp,"RECREATE");
+  sprintf(temp,"Dbackground_ggZZ_%s.root",channel);
+  TFile* fggZZ = new TFile(temp,"RECREATE");
+
+  TH2F* oldTemp;
+
+  pair<TH2F*,TH2F*> histoPair;
+
+  TH2F* low,*high,*h_mzzD;
+  
+  low = fillTemplate(channel,0,true);
+  high = fillTemplate(channel,0,false);
+  h_mzzD = mergeTemplates(low,high);
+
+  // ---------- apply interference reweighting --------
+  
+  oldTemp = new TH2F(*h_mzzD);
+  oldTemp->SetName("oldTemp");
+
+  cout << "correcting for interference and adding syst" << endl;
+  if(strcmp(channel,"2e2mu"))
+    h_mzzD = reweightForInterference(h_mzzD);  // correct templates for lepton interference
+
+  cout << "h_mzzD: " << h_mzzD << endl;
+
+  histoPair = applySystUncForInterference(h_mzzD);   // apply systematic unc for lepton interference
+
+  // --------------------------------------------------
+
+  fsig->cd();
+  h_mzzD->Write("h_mzzD");
+  oldTemp->Write("oldTemp");
+  histoPair.first->Write("h_mzzD_up");
+  histoPair.second->Write("h_mzzD_dn");
+  fsig->Close();
+
+  // ==========================
+
+  low = fillTemplate(channel,1,true);
+  high = fillTemplate(channel,1,false);
+  h_mzzD = mergeTemplates(low,high);
+
+  // ---------- apply interference reweighting --------
+  
+  oldTemp = new TH2F(*h_mzzD);
+  oldTemp->SetName("oldTemp");
+
+  cout << "apply systematics for zjets control region" << endl;
+  
+  histoPair = reweightForCRunc(h_mzzD);
+
+  // --------------------------------------------------
+
+  fqqZZ->cd();
+  h_mzzD->Write("h_mzzD");
+  oldTemp->Write("oldTemp");
+  histoPair.first->Write("h_mzzD_up");
+  histoPair.second->Write("h_mzzD_dn");
+  fqqZZ->Close();
+
+  // ==========================
+
+  low = fillTemplate(channel,2,true);
+  high = fillTemplate(channel,2,false);
+  h_mzzD = mergeTemplates(low,high);
+
+  // ---------- apply interference reweighting --------
+  
+  oldTemp = new TH2F(*h_mzzD);
+  oldTemp->SetName("oldTemp");
+
+  cout << "apply systematics for zjets control region" << endl;
+  
+  histoPair = reweightForCRunc(h_mzzD);
+
+  // --------------------------------------------------
+
+  fggZZ->cd();
+  h_mzzD->Write("h_mzzD");
+  oldTemp->Write("oldTemp");
+  histoPair.first->Write("h_mzzD_up");
+  histoPair.second->Write("h_mzzD_dn");
+  fggZZ->Close();
+
+}
+
+//=======================================================================
+
+void storeLDDistributionV3(){
+
+  makeTemplate("4mu");
+  makeTemplate("4e");
+  makeTemplate("2e2mu");
+
+}
+
 //=======================================================================
 
 void makeAllTemplates(){
@@ -1067,7 +1329,7 @@ void makeAllTemplates(){
 
 //=======================================================================
 
-void makeAllTemplatesV2(){
+void makeTemplatesV2(){
 
   storeLDDistributionV2("4mu",0);
   storeLDDistributionV2("4mu",1);
