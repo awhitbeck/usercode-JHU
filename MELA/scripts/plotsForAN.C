@@ -226,36 +226,45 @@ void MELAtemplate(char* channel="4mu",bool lowMass=true,bool plotSmooth=true){
   char fileName[150];
   sprintf(fileName,"../datafiles/Dsignal_%s.root",channel);
   TFile* sigFile = new TFile(fileName);
+  sprintf(fileName,"../datafiles/Dsignal_PS_%s.root",channel);
+  TFile* sigPsFile = new TFile(fileName);
   sprintf(fileName,"../datafiles/Dbackground_qqZZ_%s.root",channel);
   TFile* qqZZFile = new TFile(fileName);
   sprintf(fileName,"../datafiles/Dbackground_ggZZ_%s.root",channel);
   TFile* ggZZFile = new TFile(fileName);
 
   TH2F* sigTemplate ;
+  TH2F* sigPsTemplate ;
   TH2F* qqZZTemplate;
   TH2F* ggZZTemplate;
 
   if(plotSmooth){
     sigTemplate  = (TH2F*) sigFile->Get("h_mzzD");
+    sigPsTemplate  = (TH2F*) sigPsFile->Get("h_mzzD");
     qqZZTemplate = (TH2F*) qqZZFile->Get("h_mzzD");
     ggZZTemplate = (TH2F*) ggZZFile->Get("h_mzzD");
   }else{
     sigTemplate  = (TH2F*) sigFile->Get("oldTemp");
+    sigPsTemplate  = (TH2F*) sigPsFile->Get("oldTemp");
     qqZZTemplate = (TH2F*) qqZZFile->Get("oldTemp");
     ggZZTemplate = (TH2F*) ggZZFile->Get("oldTemp");
   }
   if(lowMass){
     sigTemplate->GetXaxis()->SetRangeUser(100,180);
+    sigPsTemplate->GetXaxis()->SetRangeUser(100,180);
     qqZZTemplate->GetXaxis()->SetRangeUser(100,180);
     ggZZTemplate->GetXaxis()->SetRangeUser(100,180);
   }else{
     sigTemplate->GetXaxis()->SetRangeUser(180,800);
+    sigPsTemplate->GetXaxis()->SetRangeUser(180,800);
     qqZZTemplate->GetXaxis()->SetRangeUser(180,800); 
     ggZZTemplate->GetXaxis()->SetRangeUser(180,800);
   }
  
   sigTemplate->GetXaxis()->SetTitle("m_{4l}");
   sigTemplate->GetYaxis()->SetTitle("D");
+  sigPsTemplate->GetXaxis()->SetTitle("m_{4l}");
+  sigPsTemplate->GetYaxis()->SetTitle("D");
   qqZZTemplate->GetXaxis()->SetTitle("m_{4l}");
   qqZZTemplate->GetYaxis()->SetTitle("D");
   ggZZTemplate->GetXaxis()->SetTitle("m_{4l}");
@@ -264,6 +273,8 @@ void MELAtemplate(char* channel="4mu",bool lowMass=true,bool plotSmooth=true){
 
   TCanvas* canSig = new TCanvas("canSig","canSig",400,400);
   sigTemplate->Draw("COL");
+  TCanvas* canSigPs = new TCanvas("canSigPs","canSigPs",400,400);
+  sigPsTemplate->Draw("COL");
   TCanvas* canqqZZ = new TCanvas("canqqZZ","canqqZZ",400,400);
   qqZZTemplate->Draw("COL");
   TCanvas* canggZZ = new TCanvas("canggZZ","canggZZ",400,400);
@@ -275,6 +286,13 @@ void MELAtemplate(char* channel="4mu",bool lowMass=true,bool plotSmooth=true){
     sprintf(fileName,"MELAtemplate%s_signal_%s_highMass.eps",(plotSmooth)?"Smooth":"",channel);
 
   canSig->SaveAs(fileName);
+
+  if(lowMass)
+    sprintf(fileName,"MELAtemplate%s_signal_PS_%s_lowMass.eps",(plotSmooth)?"Smooth":"",channel);
+  else
+    sprintf(fileName,"MELAtemplate%s_signal_PS_%s_highMass.eps",(plotSmooth)?"Smooth":"",channel);
+
+  canSigPs->SaveAs(fileName);
 
   if(lowMass)
     sprintf(fileName,"MELAtemplate%s_qqZZbackground_%s_lowMass.eps",(plotSmooth)?"Smooth":"",channel);
@@ -770,29 +788,27 @@ void measureSystematics(double mzzLow=130, double mzzHigh=180){
   // ----------
   
   TChain* CRdata = new TChain("SelectedTree");
-  CRdata->Add("../datafiles/CR/HZZ4lTree_Double*_CREEEEssTree.root");
-  CRdata->Add("../datafiles/CR/HZZ4lTree_Double*_CRMMMMssTree.root");
-  CRdata->Add("../datafiles/CR/HZZ4lTree_Double*_CREEMMssTree.root");
-  CRdata->Add("../datafiles/CR/HZZ4lTree_Double*_CRMMEEssTree.root");
-  CRdata->Add("../datafiles/CR/HZZ4lTree_Double*_CREEEEosTree.root");
-  CRdata->Add("../datafiles/CR/HZZ4lTree_Double*_CRMMMMosTree.root");
-  CRdata->Add("../datafiles/CR/HZZ4lTree_Double*_CREEMMosTree.root");
-  //CRdata->Add("../datafiles/CR/HZZ4lTree_Double*_CRMMEEosTree.root");
+  CRdata->Add("CJLSTtrees_June21_2012/7TeV_FSR/CR/HZZ4lTree_Double*_CREEEEssTree.root");
+  CRdata->Add("CJLSTtrees_June21_2012/7TeV_FSR/CR/HZZ4lTree_Double*_CRMMMMssTree.root");
+  CRdata->Add("CJLSTtrees_June21_2012/7TeV_FSR/CR/HZZ4lTree_Double*_CREEMMssTree.root");
+  CRdata->Add("CJLSTtrees_June21_2012/7TeV_FSR/CR/HZZ4lTree_Double*_CRMMEEssTree.root");
+  CRdata->Add("CJLSTtrees_June21_2012/7TeV_FSR/CR/HZZ4lTree_Double*_CREEEEosTree.root");
+  CRdata->Add("CJLSTtrees_June21_2012/7TeV_FSR/CR/HZZ4lTree_Double*_CRMMMMosTree.root");
+  CRdata->Add("CJLSTtrees_June21_2012/7TeV_FSR/CR/HZZ4lTree_Double*_CREEMMosTree.root");
+  //CRdata->Add("CJLSTtrees_June21_2012/7TeV_FSR/CR/HZZ4lTree_Double*_CRMMEEosTree.root");
 
   TChain* CRmc = new TChain("SelectedTree");
-  CRmc->Add("../datafiles/CR/HZZ4lTree_DYJetsToLLTuneZ2*_CREEEEssTree.root");
-  CRmc->Add("../datafiles/CR/HZZ4lTree_DYJetsToLLTuneZ2*_CRMMMMssTree.root");
-  CRmc->Add("../datafiles/CR/HZZ4lTree_DYJetsToLLTuneZ2*_CREEMMssTree.root");
-  CRmc->Add("../datafiles/CR/HZZ4lTree_DYJetsToLLTuneZ2*_CRMMEEssTree.root");
-  CRmc->Add("../datafiles/CR/HZZ4lTree_DYJetsToLLTuneZ2*_CREEEEosTree.root");
-  CRmc->Add("../datafiles/CR/HZZ4lTree_DYJetsToLLTuneZ2*_CRMMMMosTree.root");
-  CRmc->Add("../datafiles/CR/HZZ4lTree_DYJetsToLLTuneZ2*_CREEMMosTree.root");
-  //CRmc->Add("../datafiles/CR/HZZ4lTree_DYJetsToLLTuneZ2*_CRMMEEosTree.root");
+  CRmc->Add("CJLSTtrees_June21_2012/7TeV_FSR/CR/HZZ4lTree_DYJetsToLLTuneZ2*_CREEEEssTree.root");
+  CRmc->Add("CJLSTtrees_June21_2012/7TeV_FSR/CR/HZZ4lTree_DYJetsToLLTuneZ2*_CRMMMMssTree.root");
+  CRmc->Add("CJLSTtrees_June21_2012/7TeV_FSR/CR/HZZ4lTree_DYJetsToLLTuneZ2*_CREEMMssTree.root");
+  CRmc->Add("CJLSTtrees_June21_2012/7TeV_FSR/CR/HZZ4lTree_DYJetsToLLTuneZ2*_CRMMEEssTree.root");
+  CRmc->Add("CJLSTtrees_June21_2012/7TeV_FSR/CR/HZZ4lTree_DYJetsToLLTuneZ2*_CREEEEosTree.root");
+  CRmc->Add("CJLSTtrees_June21_2012/7TeV_FSR/CR/HZZ4lTree_DYJetsToLLTuneZ2*_CRMMMMosTree.root");
+  CRmc->Add("CJLSTtrees_June21_2012/7TeV_FSR/CR/HZZ4lTree_DYJetsToLLTuneZ2*_CREEMMosTree.root");
+  //CRmc->Add("CJLSTtrees_June21_2012/7TeV_FSR/CR/HZZ4lTree_DYJetsToLLTuneZ2*_CRMMEEosTree.root");
 
   TChain* qqZZ = new TChain("SelectedTree");
-  qqZZ->Add("../datafiles/4mu/HZZ4lTree_ZZTo*.root");
-  qqZZ->Add("../datafiles/4e/HZZ4lTree_ZZTo*.root");
-  qqZZ->Add("../datafiles/2mu2e/HZZ4lTree_ZZTo*.root");
+  qqZZ->Add("CJLSTtrees_June21_2012/7TeV_FSR/HZZ*Tree_ZZTo*.root");
 
   if( !CRmc || CRmc->GetEntries()<=0 || !CRdata || CRdata->GetEntries()<=0 || !qqZZ || qqZZ->GetEntries()<=0 ){
     cout << "problem loading files... " << endl;
@@ -811,6 +827,7 @@ void measureSystematics(double mzzLow=130, double mzzHigh=180){
 
   CRdata->SetBranchAddress("ZZMass",&mzz);
   CRdata->SetBranchAddress("ZZLD",&D);
+
   
   qqZZ->SetBranchAddress("ZZMass",&mzz);
   qqZZ->SetBranchAddress("ZZLD",&D);
@@ -827,8 +844,6 @@ void measureSystematics(double mzzLow=130, double mzzHigh=180){
   TH1F* h_qqZZ = new TH1F("h_qqZZ",";MELA;",30,0,1);
   h_qqZZ->Sumw2();
 
-  /*
-
   TCanvas* can = new TCanvas("can","can",400,550);
   TPad* pad2 = new TPad("pad2","pad2",0.,0.,1.,0.3);
   TPad* pad1 = new TPad("pad1","pad1",0.,0.3,1.,1.);
@@ -836,10 +851,6 @@ void measureSystematics(double mzzLow=130, double mzzHigh=180){
   
   pad1->Draw();
   pad2->Draw();
-
-  */
-
-  TCanvas* can = new TCanvas("can","can",400,400);
 
   // = = = = = =
   // fill histos
@@ -879,22 +890,28 @@ void measureSystematics(double mzzLow=130, double mzzHigh=180){
     
   }
   
+  cout << "about to draw" << endl;
+
   // = = = = = = 
   // draw histos
   // = = = = = = 
-
-  //pad1->cd();
 
   h_qqZZ->Scale(h_CRdata->Integral()/h_qqZZ->Integral());
   h_qqZZ->SetLineColor(4);
   h_qqZZ->SetLineStyle(2);  
   h_qqZZ->SetLineWidth(2);
 
+  cout << "check" <<endl;
+
   h_CRmc->Scale(h_CRdata->Integral()/h_CRmc->Integral());
   h_CRmc->SetLineColor(2);
   h_CRmc->SetLineWidth(2);
 
   h_CRdata->SetMarkerStyle(8);
+
+  cout << "style set!" << endl;
+
+  pad1->cd();
 
   if(h_CRdata->GetMaximum()+h_CRdata->GetBinError(h_CRdata->GetMaximumBin()) > h_CRmc->GetMaximum()+h_CRmc->GetBinError(h_CRmc->GetMaximumBin())){
     h_CRdata->GetYaxis()->SetRangeUser(0,(h_CRdata->GetMaximum()+h_CRdata->GetBinError(h_CRdata->GetMaximumBin()))*1.5);
@@ -908,6 +925,8 @@ void measureSystematics(double mzzLow=130, double mzzHigh=180){
     h_qqZZ->Draw("EhistSAME");
   }
 
+  cout << "done drawing?" << endl;
+
   // ---------- LEGEND ---------------
 
   TLegend* leg = new TLegend(.5,.6,.90,.90);
@@ -919,9 +938,9 @@ void measureSystematics(double mzzLow=130, double mzzHigh=180){
   
   leg->Draw();
 
-  /*
-
   // ------------ RATIO PAD ---------------
+
+  cout << "ratio" << endl;
 
   pad2->cd();
   
@@ -951,7 +970,6 @@ void measureSystematics(double mzzLow=130, double mzzHigh=180){
   ratio_qqZZ->Draw("EhistSAME");
 
   // -------------------------------------
-  */
 
   char temp[50];
   sprintf(temp,"Z+X_data_vs_MC_vs_qqZZ_%i-%i.eps",(int)mzzLow,(int)mzzHigh);
