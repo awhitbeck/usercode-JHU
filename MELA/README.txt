@@ -95,69 +95,29 @@ MELA.C contains also a macro ("calculateAngles") which computes the 5 angles sta
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Generating 2D PDF - 
+Generating 2D templates - 
 
-MELA.C can also be used to generate a 2D pdf: mZZ vs D.
-The mZZ projection is hard coded in RooMELAModel*.tpl. 
-This can be changed to your favorite mZZ projection.  The
-D portion is configured such that the projection onto 
-mZZ is exactly the function you input. Ranges to be used 
-for mZZ and mZ2 can be set via the following global variables:
+The code is currently configured to read datafiles with the 
+following naming convention
 
-mZZbins
-lowMzz
-highMzz
-lowM2
+HZZ${channel}Tree_${sample}_${sqrts}TeV.root
 
-To generate signal and background PDFs:
+To configure the standard CJLST analysis trees you can use
+following code:
 
-root
- gSystem->AddIncludePath("-I/$ROOFITSYS/include/");
-.L ../PDFs/RooXZsZs_5D.cxx+
-.L ../src/AngularPdfFactory.cc+
-.L ../PDFs/RooqqZZ_JHU.cxx+
-.L MELA.C+
-//store D vs mZZ template for signal
-storeLDDistribution(true,"mySignalFile.root")  
-//store D vs mZZ template for background
-storeLDDistribution(false,"myBackgroundFile.root")  
-//- - - - - CODA - - - -
-genMELApdf(true)
-genMELApdf(false)
+scripts/configureDataDirectory.sh
 
-/* Note the input file names are passed to 
-TChain::Add(), so wild cards can be used.  The
-tree name is assumed to be angles but this can
-be changed in LDDistributionSignal and 
-LDDistributionBackground */
+To generated root files with templates for statistical analysis:
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Alternate method to generate 2D PDF - 
+root -l -n -b 
 
-Follow instructions above until "CODA", then skip
-to here. 
+.L generateTemplates.C+
+storeLDDistribution()
 
-Once Dsignal*.root and Dbackground*.root are 
-created, one can build a fully correlated 2D PDF
-using Dsignal*.root and Dbackground*.root to build
-a 2D RooHistPdf then multiplying it by a 1D PDF which
-represent the desired mZZ project.  An example is 
-shown in buil2dPdf.C where the background mZZ 
-projection is taken from a custom RooAbsPdf, 
-RooMzzBkg.cc, and the signal mZZ projection is 
-a sum of 2 gaussians.  
+.q
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+templates will be store in root files in datafiles directory
+These files should be moved to the templates2D directory of the
+hLL4LCombination/CreateDatacards code
 
-Calculating the angles and PDFs also works in CMSSW
-Building the 2dPDF is not yet supported
-
-cvs co -d JHU/MELA/src UserCode/JHU/MELA
-rm JHU/MELA/src/scripts/build2dPdf.C
-scramv1 b
-
-the package that uses the resulting library needs to have
-an entry:
-<use name="JHUMELA"/>
-in its BuildFile.xml
 
