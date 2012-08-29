@@ -1,22 +1,78 @@
 #!/bin/sh
 
-mkdir 7TeVplus8TeV_FSR
+dirList="PRODFSR PRODFSR_8TeV JHU JHU_8TeV"
 
-list="PRODFSR_8TeV PRODFSR"
+#make directories if they don't exist
 
-for dir in $list
-do 
-for i in $(ls $dir/2mu2e/HZZ4lTree*.root | awk -F _ '{print $2}')
-    do mv $dir/2mu2e/HZZ4lTree_$i 7TeVplus8TeV_FSR/HZZ2e2muTree_$i
-    done
-    
-for i in $(ls $dir/4mu/HZZ4lTree*.root | awk -F _ '{print $2}')
-    do mv $dir/4mu/HZZ4lTree_$i 7TeVplus8TeV_FSR/HZZ4muTree_$i
-    done
+if [[ ! -d 7plus8TeV_FSR ]] 
+    then
+    mkdir 7plus8TeV_FSR
+fi
+if [[ ! -d JHUsignal ]]
+    then
+    mkdir JHUsignal
+fi
 
-for i in $(ls $dir/4e/HZZ4lTree*.root | awk -F _ '{print $2}')
-    do mv $dir/4e/HZZ4lTree_$i 7TeVplus8TeV_FSR/HZZ4eTree_$i
-    done
+#####################################
+
+for dir in $dirList
+  do
+
+  if [[ -d $dir ]] 
+      then
+
+      cd $dir
+
+      #check whether files in dir are 7TeV or 8TeV
+
+      if [[ $dir == *8TeV* ]] 
+	  then 
+	  append=8TeV
+	  else
+	  append=7TeV
+      fi
+
+      ############################################
+
+      #move files for channel sub-directory and change 4l to corresponding channel name
+
+      for i in $(ls 2mu2e/HZZ4lTree*.root | awk -F _ '{print $2}' | awk -F . '{print $1}')
+	do 
+	mv 2mu2e/HZZ4lTree_${i}.root HZZ2e2muTree_${i}_${append}.root
+      done
+      
+      for i in $(ls 4mu/HZZ4lTree*.root | awk -F _ '{print $2}' | awk -F . '{print $1}')
+	do 
+	mv 4mu/HZZ4lTree_${i}.root HZZ4muTree_${i}_${append}.root
+      done
+      
+      for i in $(ls 4e/HZZ4lTree*.root | awk -F _ '{print $2}' | awk -F . '{print $1}')
+	do 
+	mv 4e/HZZ4lTree_${i}.root HZZ4eTree_${i}_${append}.root
+      done
+      
+      rm -r 4mu
+      rm -r 4e 
+      rm -r 2mu2e
+
+      cd -
+
+      ###################################################################################
+
+      #move files to combine 7 plus 8 TeV directory
+
+      if [[ $dir = *JHU* ]]
+	  then
+	  mv ${dir}/* JHUsignal/.
+	  rm -r $dir
+	  else
+	  mv ${dir}/* 7plus8TeV_FSR/.
+	  rm -r $dir
+      fi
+
+      #############################################
+
+      fi
 done
 
 exit
