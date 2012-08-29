@@ -107,6 +107,13 @@ following code:
 
 scripts/configureDataDirectory.sh
 
+cp root files locally and run:
+
+scp -r lxcms02:/data/Higgs/rootuplesOut/260712 MYdestination
+cp configureDataDirectory.sh MYdestination
+cd MYdestination
+./configureDataDirectory.sh
+
 To generated root files with templates for statistical analysis:
 
 root -l -n -b 
