@@ -1,4 +1,5 @@
 #include "RooRealVar.h"
+#include "RooWorkspace.h"
 #include "TFile.h"
 #include "TChain.h"
 #include "TH1F.h"
@@ -11,6 +12,10 @@
 #include <vector>
 #include "../src/AngularPdfFactory.cc"
 #include "../PDFs/RooqqZZ_JHU.h"
+#include "../PDFs/RooTsallis.h"
+#include "../PDFs/RooTsallisExp.h"
+#include "../PDFs/RooRapidityBkg.h"
+#include "../PDFs/RooRapiditySig.h"
 
 /* - - - - - - - - - - - - - - - - - - - - - - - 
 ================================================
@@ -22,6 +27,10 @@ gSystem->AddIncludePath("-I/$ROOFITSYS/include/");
 .L ../PDFs/RooXZsZs_5D.cxx+
 .L ../src/AngularPdfFactory.cc+
 .L ../PDFs/RooqqZZ_JHU.cxx+
+.L ../PDFs/RooTsallis.cxx+              <-- ***RC***
+.L ../PDFs/RooTsallisExp.cxx+              <-- ***RC***
+.L ../PDFs/RooRapidityBkg.cxx+	       <-- ***CM&CY***
+.L ../PDFs/RooRapiditySig.cxx+	       <-- ***CM&CY***
 .L MELA.C+
  - -  - - - - - - - - - - - - - - -  - - -  -  -
 ===============================================*/
@@ -53,12 +62,90 @@ TH1F* mzzBinning = new TH1F("mzzBinning","mzzBinning",350,100,800);
 
 TFile *tempf = new TFile("../datafiles/my8DTemplateNotNorm.root","READ");
 
+void initAllFunctions(RooWorkspace *ws, int LHCsqrts) {
+
+  RooRealVar* z1mass_rrv = new RooRealVar("z1mass_rrv","m_{Z1}",0,180);
+  RooRealVar* z2mass_rrv = new RooRealVar("z2mass_rrv","m_{Z2}",0,120); 
+  RooRealVar* costheta1_rrv = new RooRealVar("costheta1_rrv","cos#theta_{1}",-1,1);  
+  RooRealVar* costheta2_rrv = new RooRealVar("costheta2_rrv","cos#theta_{2}",-1,1);
+  RooRealVar* phi_rrv= new RooRealVar("phi_rrv","#Phi",-3.1415,3.1415);
+  RooRealVar* costhetastar_rrv = new RooRealVar("costhetastar_rrv","cos#theta^{*}",-1,1); 
+  RooRealVar* phi1_rrv= new RooRealVar("phi1_rrv","#Phi^{*}_{1}",-3.1415,3.1415);
+  RooRealVar* mzz_rrv= new RooRealVar("mzz_rrv","mZZ",80,1000);
+  RooRealVar* y_rrv= new RooRealVar("y_rrv","y_{ZZ}",-4.0,4.0);
+  RooRealVar* pt_rrv= new RooRealVar("pt_rrv","p_{T,ZZ}",0.0,1000.);
+  RooRealVar* sqrtS_rrv = new RooRealVar("sqrtS_rrv","#sqrt{s}",1000.,14000.);
+  ws->import(*z1mass_rrv);
+  ws->import(*z2mass_rrv);
+  ws->import(*costheta1_rrv);
+  ws->import(*costheta2_rrv);
+  ws->import(*phi_rrv);
+  ws->import(*costhetastar_rrv);
+  ws->import(*phi1_rrv);
+  ws->import(*mzz_rrv);
+  ws->import(*y_rrv);
+  ws->import(*pt_rrv);
+  ws->import(*sqrtS_rrv);
+ 
+  static const int NptparamsS = 17;
+  static const int NptparamsB = 11;
+
+  char* rrvnamesB[NptparamsB] = {"m","n0","n1","n2","ndue","bb0","bb1","bb2","T0","T1","T2"};
+  RooRealVar *ptparamsB[NptparamsB];
+  RooArgSet* allparamsB = new RooArgSet();
+  for (int i = 0; i < NptparamsB; i++) {
+    ptparamsB[i] = new RooRealVar(rrvnamesB[i],rrvnamesB[i],-10000.,10000.);
+    allparamsB->add(*ptparamsB[i]);
+  }
+
+  char* rrvnamesS[NptparamsS] = {"ms","ns0","ns1","ns2","ndues","bbs0","bbs1","bbs2","Ts0","Ts1","Ts2","bbdues0","bbdues1","bbdues2","fexps0","fexps1","fexps2"};
+  RooRealVar *ptparamsS[NptparamsS];
+  RooArgSet* allparamsS = new RooArgSet();
+  for (int i = 0; i < NptparamsS; i++) {
+    ptparamsS[i] = new RooRealVar(rrvnamesS[i],rrvnamesS[i],-10000.,10000.);
+    allparamsS->add(*ptparamsS[i]);
+  }
+ 
+  RooqqZZ_JHU* SMZZ = new RooqqZZ_JHU("SMZZ","SMZZ",*z1mass_rrv,*z2mass_rrv,*costheta1_rrv,*costheta2_rrv,*phi_rrv,*costhetastar_rrv,*phi1_rrv,*mzz_rrv);
+  ws->import(*SMZZ);
+ 
+  char fileName[200];
+  sprintf(fileName,"../datafiles/allParamsSig_%dTeV.txt",LHCsqrts);
+
+  RooTsallisExp* sigPt = new RooTsallisExp("sigPt","sigPt",*pt_rrv,*mzz_rrv,
+					   *ptparamsS[0],*ptparamsS[1],*ptparamsS[2],
+					   *ptparamsS[3],*ptparamsS[4],*ptparamsS[5],
+					   *ptparamsS[6],*ptparamsS[7],*ptparamsS[8],
+					   *ptparamsS[9],*ptparamsS[10],*ptparamsS[11],
+					   *ptparamsS[12],*ptparamsS[13],*ptparamsS[14],
+					   *ptparamsS[15],*ptparamsS[16]);
+
+  allparamsS->readFromFile(fileName,0);
+  ws->import(*sigPt);
+
+  sprintf(fileName,"../datafiles/allParamsBkg_%dTeV.txt",LHCsqrts);
+  RooTsallis* bkgPt = new RooTsallis("bkgPt","bkgPt",*pt_rrv,*mzz_rrv,
+				     *ptparamsB[0],*ptparamsB[1],*ptparamsB[2],
+				     *ptparamsB[3],*ptparamsB[4],*ptparamsB[5],
+				     *ptparamsB[6],*ptparamsB[7],*ptparamsB[8],
+				     *ptparamsB[9],*ptparamsB[10]);
+  allparamsB->readFromFile(fileName,0);
+  ws->import(*bkgPt);
+
+  RooRapiditySig* sigY = new RooRapiditySig("sigY", "sigY", *y_rrv, *mzz_rrv, *sqrtS_rrv);
+  ws->import(*sigY);
+
+  RooRapidityBkg* bkgY = new RooRapidityBkg("bkgY", "bkgY", *y_rrv, *mzz_rrv, *sqrtS_rrv);
+  ws->import(*bkgY);
+
+}
+
 
 template <typename U>
 void checkZorder(U& z1mass, U& z2mass,
                  U& costhetastar, U& costheta1,
                  U& costheta2, U& phi,
-                 U& phistar1){
+                 U& phistar1, U& pt, U& ipsilon){
 
   U tempZ1mass=z1mass;
   U tempZ2mass=z2mass;
@@ -67,6 +154,8 @@ void checkZorder(U& z1mass, U& z2mass,
   U tempHs=costhetastar;
   U tempPhi1=phistar1;
   U tempPhi=phi;
+  U tempPt=pt;
+  U tempY=ipsilon;
 
   if(z2mass>z1mass){
 
@@ -76,6 +165,8 @@ void checkZorder(U& z1mass, U& z2mass,
     costheta1=tempH2;
     costheta2=tempH1;
     phi=tempPhi;
+    pt=tempPt;
+    ipsilon=tempY;
     phistar1=-tempPhi1-tempPhi;
     if(phistar1>3.1415)
       phistar1=phistar1-2*3.1415;
@@ -157,34 +248,35 @@ vector<double> my8DTemplate(bool normalized,double mZZ, double m1, double m2, do
 
 //=======================================================================
 
-pair<double,double> likelihoodDiscriminant (double mZZ, double m1, double m2, double costhetastar, double costheta1, double costheta2, double phi, double phi1,double scaleFactor=5.0){
+pair<double,double> likelihoodDiscriminant (RooWorkspace *ws, 
+					    double mZZ, double m1, double m2, 
+					    double costhetastar, double costheta1, double costheta2, double phi, double phi1, 
+					    int LHCsqrts, 
+					    bool withPt = false, double pt = 0.0, 
+					    bool withY = false, double y = 0.0,
+					    double scaleFactor = 5.0){
+  
+  ws->var("sqrtS_rrv")->setVal(LHCsqrts*1000.);
+  ws->var("sqrtS_rrv")->setConstant(kTRUE);
 
-  RooRealVar* z1mass_rrv = new RooRealVar("z1mass","m_{Z1}",0,180);
-  RooRealVar* z2mass_rrv = new RooRealVar("z2mass","m_{Z2}",0,120); 
-  RooRealVar* costheta1_rrv = new RooRealVar("costheta1","cos#theta_{1}",-1,1);  
-  RooRealVar* costheta2_rrv = new RooRealVar("costheta2","cos#theta_{2}",-1,1);
-  RooRealVar* phi_rrv= new RooRealVar("phi","#Phi",-3.1415,3.1415);
-  RooRealVar* costhetastar_rrv = new RooRealVar("costhetastar","cos#theta^{*}",-1,1); 
-  RooRealVar* phi1_rrv= new RooRealVar("phi1","#Phi^{*}_{1}",-3.1415,3.1415);
-  RooRealVar* mzz_rrv= new RooRealVar("mzz","mZZ",80,1000);
+  checkZorder<double>(m1,m2,costhetastar,costheta1,costheta2,phi,phi1,pt,y);
 
-  AngularPdfFactory *SMHiggs = new AngularPdfFactory(z1mass_rrv,z2mass_rrv,costheta1_rrv,costheta2_rrv,phi_rrv,mzz_rrv);
-  SMHiggs->makeSMHiggs();
-  SMHiggs->makeParamsConst(true);
-  RooqqZZ_JHU* SMZZ = new RooqqZZ_JHU("SMZZ","SMZZ",*z1mass_rrv,*z2mass_rrv,*costheta1_rrv,*costheta2_rrv,*phi_rrv,*costhetastar_rrv,*phi1_rrv,*mzz_rrv);
-
-  checkZorder<double>(m1,m2,costhetastar,costheta1,costheta2,phi,phi1);
-
-  z1mass_rrv->setVal(m1);  
-  z2mass_rrv->setVal(m2);
-  costheta1_rrv->setVal(costheta1);
-  costheta2_rrv->setVal(costheta2);
-  phi_rrv->setVal(phi);
-  costhetastar_rrv->setVal(costhetastar);
-  phi1_rrv->setVal(phi1);
-  mzz_rrv->setVal(mZZ);
+  ws->var("z1mass_rrv")->setVal(m1);  
+  ws->var("z2mass_rrv")->setVal(m2);
+  ws->var("costheta1_rrv")->setVal(costheta1);
+  ws->var("costheta2_rrv")->setVal(costheta2);
+  ws->var("phi_rrv")->setVal(phi);
+  ws->var("costhetastar_rrv")->setVal(costhetastar);
+  ws->var("phi1_rrv")->setVal(phi1);
+  ws->var("mzz_rrv")->setVal(mZZ);
+  ws->var("pt_rrv")->setVal(pt);
+  ws->var("y_rrv")->setVal(y);
 
   vector <double> P=my8DTemplate(1, mZZ,  m1,  m2,  costhetastar,  costheta1,  costheta2,  phi,  phi1);
+
+  AngularPdfFactory *SMHiggs = new AngularPdfFactory(ws->var("z1mass_rrv"),ws->var("z2mass_rrv"),ws->var("costheta1_rrv"),ws->var("costheta2_rrv"),ws->var("phi_rrv"),ws->var("mzz_rrv"));
+  SMHiggs->makeSMHiggs();
+  SMHiggs->makeParamsConst(true);
 
   double Pbackg=0.;
   double Psig=0.;
@@ -193,15 +285,24 @@ pair<double,double> likelihoodDiscriminant (double mZZ, double m1, double m2, do
     Pbackg = P[0]*P[1]*P[2]*P[3]*P[4]*P[5]*5.0;
     Psig = SMHiggs->getVal(mZZ);
   }if(mZZ>180&&mZZ<=2*91.188){
-    z1mass_rrv->setVal(mZZ/2. - 1e-9);  // turns out signal norm will by zero if m1+m2==mzz
-    z2mass_rrv->setVal(mZZ/2. - 1e-9);  // adding tiny amount to avoid this
-    Pbackg = SMZZ->getVal()/(SMZZ->createIntegral(RooArgSet(*costhetastar_rrv,*costheta1_rrv,*costheta2_rrv,*phi_rrv,*phi1_rrv))->getVal())*10.0;
-    Psig = SMHiggs->PDF->getVal()/(SMHiggs->PDF->createIntegral(RooArgSet(*costheta1_rrv,*costheta2_rrv,*phi_rrv))->getVal());
+    ws->var("z1mass_rrv")->setVal(mZZ/2. - 1e-9);  // turns out signal norm will by zero if m1+m2==mzz
+    ws->var("z2mass_rrv")->setVal(mZZ/2. - 1e-9);  // adding tiny amount to avoid this
+    Pbackg = ws->pdf("SMZZ")->getVal()/( ws->pdf("SMZZ")->createIntegral(RooArgSet(*ws->var("costhetastar_rrv"),*ws->var("costheta1_rrv"),*ws->var("costheta2_rrv"),*ws->var("phi_rrv"),*ws->var("phi1_rrv")))->getVal())*10.0;
+    Psig = SMHiggs->PDF->getVal()/(SMHiggs->PDF->createIntegral(RooArgSet(*ws->var("costheta1_rrv"),*ws->var("costheta2_rrv"),*ws->var("phi_rrv")))->getVal());
   }if(mZZ>2*91.188){
-    z1mass_rrv->setVal(91.188);
-    z2mass_rrv->setVal(91.188);
-    Pbackg = SMZZ->getVal()/(SMZZ->createIntegral(RooArgSet(*costhetastar_rrv,*costheta1_rrv,*costheta2_rrv,*phi_rrv,*phi1_rrv))->getVal())*10.0;
-    Psig = SMHiggs->PDF->getVal()/(SMHiggs->PDF->createIntegral(RooArgSet(*costheta1_rrv,*costheta2_rrv,*phi_rrv))->getVal());
+    ws->var("z1mass_rrv")->setVal(91.188);
+    ws->var("z2mass_rrv")->setVal(91.188);
+    Pbackg = ws->pdf("SMZZ")->getVal()/( ws->pdf("SMZZ")->createIntegral(RooArgSet(*ws->var("costhetastar_rrv"),*ws->var("costheta1_rrv"),*ws->var("costheta2_rrv"),*ws->var("phi_rrv"),*ws->var("phi1_rrv")))->getVal())*10.0;
+    Psig = SMHiggs->PDF->getVal()/(SMHiggs->PDF->createIntegral(RooArgSet(*ws->var("costheta1_rrv"),*ws->var("costheta2_rrv"),*ws->var("phi_rrv")))->getVal());
+  }
+
+  if (withPt) {
+    Pbackg *= ws->pdf("bkgPt")->getVal()/(ws->pdf("bkgPt")->createIntegral(RooArgSet(*ws->var("pt_rrv")))->getVal());
+    Psig *= ws->pdf("sigPt")->getVal()/(ws->pdf("sigPt")->createIntegral(RooArgSet(*ws->var("pt_rrv")))->getVal());
+  }
+  if(withY) {
+    Pbackg *= ws->pdf("bkgY")->getVal()/(ws->pdf("bkgY")->createIntegral(RooArgSet(*ws->var("y_rrv")))->getVal());
+    Psig *= ws->pdf("sigY")->getVal()/(ws->pdf("sigY")->createIntegral(RooArgSet(*ws->var("y_rrv")))->getVal());
   }
 
   // - - - - - - - - - - - - - - - - - - - - - Whitbeck 
@@ -216,15 +317,6 @@ pair<double,double> likelihoodDiscriminant (double mZZ, double m1, double m2, do
   }
   // - - - - - - - - - - - - - - - - - - - - - 
  
-  delete z1mass_rrv; 
-  delete z2mass_rrv; 
-  delete costheta1_rrv;
-  delete costheta2_rrv;
-  delete phi_rrv;
-  delete costhetastar_rrv;
-  delete phi1_rrv;
-  delete mzz_rrv; 
-  delete SMZZ;
   delete SMHiggs;
 
   return make_pair(Psig,Pbackg);
@@ -232,39 +324,97 @@ pair<double,double> likelihoodDiscriminant (double mZZ, double m1, double m2, do
 
 //=======================================================================
 
-void addDtoTree(char* inputFile){
+void addDtoTree(char* inputFile, int LHCsqrts = 7, 
+		float minMzz = 100., float maxMzz = 1000., 
+		bool containsPt = false, bool containsY = false){
 
   RooMsgService::instance().getStream(1).removeTopic(NumIntegration);
+
+  if (LHCsqrts < 7 || LHCsqrts > 8) {
+    cout << "LHC energy must be 7 or 8 TeV!" << endl;
+    return;
+  }
 
   char inputFileName[100];
   char outputFileName[150];
   sprintf(inputFileName,"%s.root",inputFile);
-  sprintf(outputFileName,"%s_withDiscriminants.root",inputFile);
+
+  if(!containsPt && !containsY)
+    {
+      sprintf(outputFileName,"%s_%d-%d_withDiscriminants.root",inputFile,int(minMzz),int(maxMzz));
+    }
+  else if(containsPt && !containsY)
+    {
+      sprintf(outputFileName,"%s_%d-%d_withDiscriminantsPt.root",inputFile,int(minMzz),int(maxMzz));
+    }
+  else if(!containsPt && containsY)
+    {
+      sprintf(outputFileName,"%s_%d-%d_withDiscriminantsY.root",inputFile,int(minMzz),int(maxMzz));
+    }
+  else if(containsPt && containsY)
+    {
+      sprintf(outputFileName,"%s_%d-%d_withDiscriminantsPtY.root",inputFile,int(minMzz),int(maxMzz));
+    }
 
   TFile* sigFile = new TFile(inputFileName);
   TTree* sigTree=0;
-    if(sigFile)
+     if(sigFile)
         sigTree = (TTree*) sigFile->Get("SelectedTree");
     if(!sigTree){
       cout<<"ERROR could not find the tree!"<<endl;
       return;
-    }
+      }
+
+    //TChain* sigTree = new TChain("SelectedTree");
+    //sigTree->Add("../datafiles/4e/HZZ4lTree_H125.root");
+    //sigTree->Add("../datafiles/4mu/HZZ4lTree_H125.root");
+    //sigTree->Add("../datafiles/2mu2e/HZZ4lTree_H125.root"); 
+  // sigTree->Add("../datafiles/4e/HZZ4lTree_ggZZ2l2l.root");
+  // sigTree->Add("../datafiles/4e/HZZ4lTree_ggZZ4l.root");
+  /* sigTree->Add("../datafiles/4e/HZZ4lTree_ZZTo2e2mu.root");
+  sigTree->Add("../datafiles/4e/HZZ4lTree_ZZTo2e2tau.root");
+  sigTree->Add("../datafiles/4e/HZZ4lTree_ZZTo2mu2tau.root");
+  sigTree->Add("../datafiles/4e/HZZ4lTree_ZZTo4e.root");
+  sigTree->Add("../datafiles/4e/HZZ4lTree_ZZTo4mu.root");
+  sigTree->Add("../datafiles/4e/HZZ4lTree_ZZTo4tau.root");
+  // sigTree->Add("../datafiles/4mu/HZZ4lTree_ggZZ2l2l.root");
+  // sigTree->Add("../datafiles/4mu/HZZ4lTree_ggZZ4l.root");
+  sigTree->Add("../datafiles/4mu/HZZ4lTree_ZZTo2e2mu.root");
+  sigTree->Add("../datafiles/4mu/HZZ4lTree_ZZTo2e2tau.root");
+  sigTree->Add("../datafiles/4mu/HZZ4lTree_ZZTo2mu2tau.root");
+  sigTree->Add("../datafiles/4mu/HZZ4lTree_ZZTo4e.root");
+  sigTree->Add("../datafiles/4mu/HZZ4lTree_ZZTo4mu.root");
+  sigTree->Add("../datafiles/4mu/HZZ4lTree_ZZTo4tau.root");
+  // sigTree->Add("../datafiles/2mu2e/HZZ4lTree_ggZZ2l2l.root");
+  // sigTree->Add("../datafiles/2mu2e/HZZ4lTree_ggZZ4l.root");
+  sigTree->Add("../datafiles/2mu2e/HZZ4lTree_ZZTo2e2mu.root");
+  sigTree->Add("../datafiles/2mu2e/HZZ4lTree_ZZTo2e2tau.root");
+  sigTree->Add("../datafiles/2mu2e/HZZ4lTree_ZZTo2mu2tau.root");
+  sigTree->Add("../datafiles/2mu2e/HZZ4lTree_ZZTo4e.root");
+  sigTree->Add("../datafiles/2mu2e/HZZ4lTree_ZZTo4mu.root");
+  sigTree->Add("../datafiles/2mu2e/HZZ4lTree_ZZTo4tau.root"); */
 
   TFile* newFile = new TFile(outputFileName,"RECREATE");
   TTree* newTree = new TTree("newTree","SelectedTree"); 
 
   float m1,m2,mzz,h1,h2,hs,phi,phi1,D;
-  float ZZPt, w;
+  float ZZPt, ZZY, w;
   
   sigTree->SetBranchAddress("Z1Mass",&m1);
   sigTree->SetBranchAddress("Z2Mass",&m2);
   sigTree->SetBranchAddress("ZZMass",&mzz);
-  sigTree->SetBranchAddress("costheta1",&h1); 
-  sigTree->SetBranchAddress("costheta2",&h2);
+  // sigTree->SetBranchAddress("costheta1",&h1); 
+  // sigTree->SetBranchAddress("costheta2",&h2);
+  sigTree->SetBranchAddress("helcosthetaZ1",&h1); 
+  sigTree->SetBranchAddress("helcosthetaZ2",&h2);
   sigTree->SetBranchAddress("costhetastar",&hs);
-  sigTree->SetBranchAddress("phi",&phi);  
-  sigTree->SetBranchAddress("phistar1",&phi1);
-  sigTree->SetBranchAddress("ZZPt",&ZZPt);
+  // sigTree->SetBranchAddress("phi",&phi);  
+  // sigTree->SetBranchAddress("phistar1",&phi1);
+  sigTree->SetBranchAddress("helphi",&phi);  
+  sigTree->SetBranchAddress("phistarZ1",&phi1);
+
+  if (containsPt) sigTree->SetBranchAddress("ZZPt",&ZZPt);
+  if (containsY) sigTree->SetBranchAddress("ZZRapidity", &ZZY);
   sigTree->SetBranchAddress("MC_weight",&w);
 
   newTree->Branch("z1mass",&m1,"z1mass/F");
@@ -275,9 +425,22 @@ void addDtoTree(char* inputFile){
   newTree->Branch("costhetastar",&hs,"costhetastar/F");
   newTree->Branch("phi",&phi,"phi/F");  
   newTree->Branch("phistar1",&phi1,"phistar1/F");
-  newTree->Branch("ZZPt",&ZZPt,"ZZPt/F");
-  newTree->Branch("melaLD",&D,"melaLD/F");
+  if (containsPt) {
+    newTree->Branch("ZZPt",&ZZPt,"ZZPt/F");
+    if(!containsY)
+      newTree->Branch("melaLDWithPt",&D,"melaLDWithPt/F");
+    else newTree->Branch("melaLDWithPtY", &D,"melaLDWithPtY/F");
+  }
+  if (containsY) {
+    newTree->Branch("ZZY", &ZZY, "ZZY/F");
+    if(!containsPt) newTree->Branch("melaLDWithY", &D, "melaLDWithY/F");
+  }
+  if (!containsPt && !containsY) newTree->Branch("melaLD",&D,"melaLD/F");
+   
   newTree->Branch("MC_weight",&w,"MC_weight/F");
+
+  RooWorkspace *ws = new RooWorkspace("ws");
+  initAllFunctions(ws,LHCsqrts);
 
   for(int iEvt=0; iEvt<sigTree->GetEntries(); iEvt++){
 
@@ -285,33 +448,40 @@ void addDtoTree(char* inputFile){
       cout << "event: " << iEvt << endl;
 
     sigTree->GetEntry(iEvt);
-
-    checkZorder<float>(m1,m2,hs,h1,h2,phi,phi1);
-
-    if(mzz>100. && mzz<1000. && m2>12. ) 
+    
+    checkZorder<float>(m1,m2,hs,h1,h2,phi,phi1,ZZPt,ZZY);
+    
+    if(mzz>minMzz && mzz<maxMzz && m2>12. ) 
       {
-
-      //MELA LD
 	
-      pair<double,double> P = likelihoodDiscriminant(mzz, m1, m2, hs, h1, h2, phi, phi1);
-      D=P.first/(P.first+P.second);
-
-      newTree->Fill();
-
-    }
-   }
+	//MELA LD
+	pair<double,double> P;
+	if(!containsPt && !containsY)
+	  P = likelihoodDiscriminant(ws, mzz, m1, m2, hs, h1, h2, phi, phi1, LHCsqrts);
+	else if (containsPt && !containsY) 
+	  P = likelihoodDiscriminant(ws, mzz, m1, m2, hs, h1, h2, phi, phi1, LHCsqrts, true, ZZPt, false);
+	else if (!containsPt && containsY)
+	  P = likelihoodDiscriminant(ws, mzz, m1, m2, hs, h1, h2, phi, phi1, LHCsqrts, false, 0., true, ZZY);
+	else if(containsPt && containsY)
+	  P = likelihoodDiscriminant(ws, mzz, m1, m2, hs, h1, h2, phi, phi1, LHCsqrts, true, ZZPt, true, ZZY);
+	
+	D=P.first/(P.first+P.second);
+	newTree->Fill();
+	
+      }
+  }
 
   newFile->cd();
   newTree->Write("angles"); 
   newFile->Close();
-
+  
 }
 
 //=======================================================================
 
-vector<TH1F*> LDDistributionBackground(TTree* chain){
+vector<TH1F*> LDDistributionBackground(RooWorkspace *ws, TTree* chain){
 
-  float mZZ, m2, m1, costhetastar, costheta1, costheta2, phi, phi1;
+  float mZZ, m2, m1, costhetastar, costheta1, costheta2, phi, phi1, pt, y;
   float MC_weight=1;
   float mela=-99;
   chain->SetBranchAddress("ZZMass",&mZZ);
@@ -350,9 +520,9 @@ vector<TH1F*> LDDistributionBackground(TTree* chain){
           
     if(mela<0){
 
-      checkZorder<float>(m1,m2,costhetastar,costheta1,costheta2,phi,phi1);
+      checkZorder<float>(m1,m2,costhetastar,costheta1,costheta2,phi,phi1,pt,y);
       
-      pair<double,double> P =  likelihoodDiscriminant(mZZ, m1, m2, costhetastar, costheta1, costheta2, phi, phi1);
+      pair<double,double> P =  likelihoodDiscriminant(ws, mZZ, m1, m2, costhetastar, costheta1, costheta2, phi, phi1 ,7);
       
       mela=P.first/(P.first+P.second);
     }
@@ -373,9 +543,9 @@ vector<TH1F*> LDDistributionBackground(TTree* chain){
 
 
 //=======================================================================
-vector<TH1F*> LDDistributionSignal(TTree* chain){
+vector<TH1F*> LDDistributionSignal(RooWorkspace *ws, TTree* chain){
  
-  float mZZ, m2, m1, costhetastar, costheta1, costheta2, phi, phi1;
+  float mZZ, m2, m1, costhetastar, costheta1, costheta2, phi, phi1, pt, y;
   float MC_weight=1;
   float mela=-99;
   chain->SetBranchAddress("ZZMass",&mZZ);
@@ -414,9 +584,9 @@ vector<TH1F*> LDDistributionSignal(TTree* chain){
       
     if(mela<0){
 
-      checkZorder<float>(m1,m2,costhetastar,costheta1,costheta2,phi,phi1);
+      checkZorder<float>(m1,m2,costhetastar,costheta1,costheta2,phi,phi1,pt,y);
       
-      pair<double,double> P =  likelihoodDiscriminant(mZZ, m1, m2, costhetastar, costheta1, costheta2, phi, phi1);
+      pair<double,double> P =  likelihoodDiscriminant(ws, mZZ, m1, m2, costhetastar, costheta1, costheta2, phi, phi1, 7);
 
       mela=P.first/(P.first+P.second);
 
@@ -833,12 +1003,15 @@ void storeLDDistribution(bool signal,char* fileName, char* tag,bool smooth=true)
   TChain* chain = new TChain("SelectedTree");
   chain->Add(fileName);
 
+  RooWorkspace *ws = new RooWorkspace("ws");
+  initAllFunctions(ws,7);
+
   if(signal){
-    vh_LD = LDDistributionSignal(chain);
+    vh_LD = LDDistributionSignal(ws,chain);
     sprintf(temp,"../datafiles/Dsignal_%s.root",tag);
     file= new TFile(temp,"recreate");
   }else{
-    vh_LD = LDDistributionBackground(chain);
+    vh_LD = LDDistributionBackground(ws,chain);
     sprintf(temp,"../datafiles/Dbackground_%s.root",tag);
     file= new TFile(temp,"recreate");
   }
@@ -934,17 +1107,20 @@ void storeLDDistributionV2(char* channel="4mu",int sampleIndex=1, char* dir="/tm
   vector<TH1F*> vh_LD_lowmass;
   vector<TH1F*> vh_LD_highmass;
 
+  RooWorkspace *ws = new RooWorkspace("ws");
+  initAllFunctions(ws,7);
+
   TFile *file;
   char temp[50];
 
   if(sampleIndex==0){
-    vh_LD_lowmass  = LDDistributionSignal(singalTree);
-    vh_LD_highmass = LDDistributionSignal(combTree);
+    vh_LD_lowmass  = LDDistributionSignal(ws,singalTree);
+    vh_LD_highmass = LDDistributionSignal(ws,combTree);
     sprintf(temp,"../datafiles/Dsignal_%s.root",channel);
     file= new TFile(temp,"recreate");
   }else{
-    vh_LD_lowmass  = LDDistributionBackground(singalTree);
-    vh_LD_highmass = LDDistributionBackground(combTree);
+    vh_LD_lowmass  = LDDistributionBackground(ws,singalTree);
+    vh_LD_highmass = LDDistributionBackground(ws,combTree);
     sprintf(temp,"../datafiles/Dbackground_%s_%s.root",tag[sampleIndex].c_str(),channel);
     file= new TFile(temp,"recreate");
   }
