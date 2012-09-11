@@ -390,12 +390,12 @@ public:
 
     if((int)floor(mZZ-100)>79){
 
-      cout << "Normalization is not available for this value of mZZ: " << (int)floor(mZZ-100) << endl;
+      // cout << "Normalization is not available for this value of mZZ: " << mZZ << endl;
       return PDF->getVal()/Norm[79];
 
     }if((int)floor(mZZ-100)<0){
 
-      cout << "Normalization is not available for this value of mZZ: " << (int)floor(mZZ-100) << endl;
+      // cout << "Normalization is not available for this value of mZZ: " << mZZ << endl;
       return PDF->getVal()/Norm[0];
 
     }
