@@ -241,7 +241,7 @@ vector<double> my8DTemplate(bool normalized,double mZZ, double m1, double m2, do
 pair<double,double> likelihoodDiscriminant (RooWorkspace *ws, 
 					    double mZZ, double m1, double m2, 
 					    double costhetastar, double costheta1, double costheta2, double phi, double phi1, 
-					    int LHCsqrts, 
+					    int LHCsqrts=7, 
 					    bool withPt = false, double pt = 0.0, 
 					    bool withY = false, double y = 0.0){
   
