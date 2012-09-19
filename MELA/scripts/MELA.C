@@ -38,9 +38,9 @@ gSystem->AddIncludePath("-I/$ROOFITSYS/include/");
 
 using namespace RooFit ;
 
-int lowMzz=100.;
-int highMzz=800.;
-int lowM2=12.;
+int lowMzz=100;
+int highMzz=800;
+int lowM2=12;
 
 TFile *tempf = new TFile("../datafiles/my8DTemplateNotNorm.root","READ");
 
@@ -80,19 +80,19 @@ void initAllFunctions(RooWorkspace *ws, int LHCsqrts) {
   static const int NptparamsS = 17;
   static const int NptparamsB = 11;
 
-  char* rrvnamesB[NptparamsB] = {"m","n0","n1","n2","ndue","bb0","bb1","bb2","T0","T1","T2"};
+  string rrvnamesB[NptparamsB] = {"m","n0","n1","n2","ndue","bb0","bb1","bb2","T0","T1","T2"};
   RooRealVar *ptparamsB[NptparamsB];
   RooArgSet* allparamsB = new RooArgSet();
   for (int i = 0; i < NptparamsB; i++) {
-    ptparamsB[i] = new RooRealVar(rrvnamesB[i],rrvnamesB[i],-10000.,10000.);
+    ptparamsB[i] = new RooRealVar(rrvnamesB[i].c_str(),rrvnamesB[i].c_str(),-10000.,10000.);
     allparamsB->add(*ptparamsB[i]);
   }
 
-  char* rrvnamesS[NptparamsS] = {"ms","ns0","ns1","ns2","ndues","bbs0","bbs1","bbs2","Ts0","Ts1","Ts2","bbdues0","bbdues1","bbdues2","fexps0","fexps1","fexps2"};
+  string rrvnamesS[NptparamsS] = {"ms","ns0","ns1","ns2","ndues","bbs0","bbs1","bbs2","Ts0","Ts1","Ts2","bbdues0","bbdues1","bbdues2","fexps0","fexps1","fexps2"};
   RooRealVar *ptparamsS[NptparamsS];
   RooArgSet* allparamsS = new RooArgSet();
   for (int i = 0; i < NptparamsS; i++) {
-    ptparamsS[i] = new RooRealVar(rrvnamesS[i],rrvnamesS[i],-10000.,10000.);
+    ptparamsS[i] = new RooRealVar(rrvnamesS[i].c_str(),rrvnamesS[i].c_str(),-10000.,10000.);
     allparamsS->add(*ptparamsS[i]);
   }
  
@@ -350,7 +350,7 @@ void addDtoTree(char* inputFile, int LHCsqrts = 7,
   TFile* sigFile = new TFile(inputFileName);
   TTree* sigTree=0;
      if(sigFile)
-        sigTree = (TTree*) sigFile->Get("angles");
+        sigTree = (TTree*) sigFile->Get("SelectedTree");
     if(!sigTree){
       cout<<"ERROR could not find the tree!"<<endl;
       return;

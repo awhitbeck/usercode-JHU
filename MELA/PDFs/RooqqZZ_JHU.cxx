@@ -400,6 +400,9 @@ Double_t RooqqZZ_JHU::integratePartonicXS_Dh2DphDPh1_1(double m1_c, double m2_c,
     double shsdb = 2*hs*shs; // sin 2*Theta
     double h1db = 1 - 2*sh1*sh1; // cos 2*theta1
     double h2db = 1 - 2*sh2*sh2; // cos 2*theta2
+
+    // remove compiler warnings
+    if(phi || hsdb || h2db){}
     
     double x = (M1*M1-M2*M2)/s;
     double beta1 = Sqrt(1. - (4.*M1*M1)/(s*(1+x)*(1+x))); 
@@ -566,7 +569,10 @@ Double_t RooqqZZ_JHU::integratePartonicXS_Dh1DphDPh1_2(double m1_c, double m2_c,
     double shsdb = 2*hs*shs; // sin 2*Theta
     double h1db = 1 - 2*sh1*sh1; // cos 2*theta1
     double h2db = 1 - 2*sh2*sh2; // cos 2*theta2
-    
+
+    // remove compiler warnings
+    if(phi || hsdb || h1db){}
+
     double x = (M1*M1-M2*M2)/s;
     double beta1 = Sqrt(1. - (4.*M1*M1)/(s*(1+x)*(1+x))); 
     double beta2 = Sqrt(1. - (4.*M2*M2)/(s*(1+x)*(1+x)));
@@ -739,6 +745,9 @@ Double_t RooqqZZ_JHU::integratePartonicXS_Dh1Dh2Dph_3(double m1_c, double m2_c, 
     double shsdb = 2*hs*shs; // sin 2*Theta
     double h1db = 1 - 2*sh1*sh1; // cos 2*theta1
     double h2db = 1 - 2*sh2*sh2; // cos 2*theta2
+
+    // remove compiler warnings
+    if(phi || h1db || h2db) {}
     
     double x = (M1*M1-M2*M2)/s;
     double beta1 = Sqrt(1. - (4.*M1*M1)/(s*(1+x)*(1+x))); 
@@ -1021,6 +1030,9 @@ Double_t RooqqZZ_JHU::integratePartonicXS_Dh1Dh2DPh1_4(double m1_c, double m2_c,
     double shsdb = 2*hs*shs; // sin 2*Theta
     double h1db = 1 - 2*sh1*sh1; // cos 2*theta1
     double h2db = 1 - 2*sh2*sh2; // cos 2*theta2
+
+    // remove compiler warnings
+    if(h1db || h2db){}
     
     double x = (M1*M1-M2*M2)/s;
     double beta1 = Sqrt(1. - (4.*M1*M1)/(s*(1+x)*(1+x))); 
@@ -1246,6 +1258,9 @@ Double_t RooqqZZ_JHU::integratePartonicXS_Dh1Dh2DphDPh1_5(double m1_c, double m2
     double shsdb = 2*hs*shs; // sin 2*Theta
     double h1db = 1 - 2*sh1*sh1; // cos 2*theta1
     double h2db = 1 - 2*sh2*sh2; // cos 2*theta2
+
+    // remove compiler warnings
+    if(phi || hsdb || h1db || h2db){}
     
     double x = (M1*M1-M2*M2)/s;
     double beta1 = Sqrt(1. - (4.*M1*M1)/(s*(1+x)*(1+x))); 

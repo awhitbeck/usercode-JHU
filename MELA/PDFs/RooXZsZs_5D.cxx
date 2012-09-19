@@ -1,3 +1,5 @@
+// Included verbatim from UserCode/scasasso/HZZ4lAnalysis/HZZ4lCommon/src tag V00-00-00
+
 /***************************************************************************** 
  * Project: RooFit                                                           * 
  *                                                                           * 
@@ -6,15 +8,15 @@
 
 // Your description goes here... 
 
-#include "Riostream.h" 
+#include "RooXZsZs_5D.h"
 
-#include "RooXZsZs_5D.h" 
+#include "Riostream.h"
 #include "RooAbsReal.h" 
 #include "RooAbsCategory.h" 
 #include <math.h> 
 #include "TMath.h" 
 
-ClassImp(RooXZsZs_5D) 
+//ClassImp(RooXZsZs_5D) 
 
 RooXZsZs_5D::RooXZsZs_5D(const char *name, const char *title, 
                          RooAbsReal& _m1,
@@ -97,9 +99,9 @@ Double_t RooXZsZs_5D::evaluate() const
     if (nanval != nanval) return 1e-9;
     
     Double_t f00Val = (a1Val*a1Val*chi*chi+pow(a2Val,2)*pow(eta,2)*(chi*chi-1.)*(chi*chi-1.)+2.*a1Val*a2Val*chi*(chi*chi-1)*eta*cos(phi1Val-phi2Val));
-    Double_t fppVal = (a1Val*a1Val+pow(a3Val,2)*pow(eta,2)*(chi*chi-1)+2.*a1Val*a3Val*chi*sqrt(chi*chi-1)*eta*cos(phi1Val-phi3Val));
-    Double_t fmmVal = (a1Val*a1Val+pow(a3Val,2)*pow(eta,2)*(chi*chi-1)+2.*a1Val*a3Val*chi*sqrt(chi*chi-1)*eta*cos(phi1Val-phi3Val));
-    Double_t phi00Val = atan2(a1Val*sin(phi1Val)+a2Val*eta*(chi*chi-1)*sin(phi2Val),a1Val*cos(phi1Val)+a2Val*eta*(chi*chi-1)*cos(phi2Val))+TMath::Pi();
+    Double_t fppVal = (a1Val*a1Val+pow(a3Val,2)*pow(eta,2)*(chi*chi-1));
+    Double_t fmmVal = (a1Val*a1Val+pow(a3Val,2)*pow(eta,2)*(chi*chi-1));
+    Double_t phi00Val = atan2(a1Val*sin(phi1Val)+a2Val*eta*(chi*chi-1)*sin(phi2Val),a1Val*cos(phi1Val)+a2Val*eta*(chi*chi-1)*cos(phi2Val)) + TMath::Pi();
     Double_t phippVal = atan2(a1Val*sin(phi1Val)+a3Val*eta*sqrt(chi*chi-1)*sin(phi3Val),a1Val*cos(phi3Val)-a3Val*eta*sqrt(chi*chi-1)*cos(phi3Val));
     Double_t phimmVal = atan2(a1Val*sin(phi1Val)-a3Val*eta*sqrt(chi*chi-1)*sin(phi3Val),a1Val*cos(phi3Val)+a3Val*eta*sqrt(chi*chi-1)*cos(phi3Val));
     
@@ -134,10 +136,10 @@ Double_t RooXZsZs_5D::evaluate() const
 
 Int_t RooXZsZs_5D::getAnalyticalIntegral(RooArgSet& allVars, RooArgSet& analVars, const char* /*rangeName*/) const
 {
-    if (matchArgs(allVars,analVars,h1,h2,Phi)) return 6 ;
     if (matchArgs(allVars,analVars,Phi,h1)) return 3 ;
     if (matchArgs(allVars,analVars,Phi,h2)) return 4 ;
     if (matchArgs(allVars,analVars,h1,h2)) return 5 ;
+    if (matchArgs(allVars,analVars,h1,h2,Phi)) return 6 ;
     return 0 ;
 }
 Double_t RooXZsZs_5D::analyticalIntegral(Int_t code, const char* rangeName) const
@@ -150,9 +152,7 @@ Double_t RooXZsZs_5D::analyticalIntegral(Int_t code, const char* rangeName) cons
         {
             // ENTER EXPRESSION IN TERMS OF VARIABLE ARGUMENTS HERE 
             //   const Double_t VEV = 246.;
-            Double_t sh1 = sqrt(1-h1*h1);
-            Double_t sh2 = sqrt(1-h2*h2);        
-            
+
             // definition of helicity amplitudes
             Double_t chi = (mX*mX-m1*m1-m2*m2)/(2.*m2*m1);
             Double_t eta = (m1*m2)/pow(mX,2);
@@ -168,9 +168,9 @@ Double_t RooXZsZs_5D::analyticalIntegral(Int_t code, const char* rangeName) cons
             Double_t f00Val = (a1Val*a1Val*chi*chi+pow(a2Val,2)*pow(eta,2)*(chi*chi-1.)*(chi*chi-1.)+2.*a1Val*a2Val*chi*(chi*chi-1)*eta*cos(phi1Val-phi2Val));
             Double_t fppVal = (a1Val*a1Val+pow(a3Val,2)*pow(eta,2)*(chi*chi-1)+2.*a1Val*a3Val*chi*sqrt(chi*chi-1)*eta*cos(phi1Val-phi3Val));
             Double_t fmmVal = (a1Val*a1Val+pow(a3Val,2)*pow(eta,2)*(chi*chi-1)+2.*a1Val*a3Val*chi*sqrt(chi*chi-1)*eta*cos(phi1Val-phi3Val));
-            Double_t phi00Val = atan2(a1Val*sin(phi1Val)+a2Val*eta*(chi*chi-1)*sin(phi2Val),a1Val*cos(phi1Val)+a2Val*eta*(chi*chi-1)*cos(phi2Val)) + TMath::Pi();
-            Double_t phippVal = atan2(a1Val*sin(phi1Val)+a3Val*eta*sqrt(chi*chi-1)*sin(phi3Val),a1Val*cos(phi3Val)-a3Val*eta*sqrt(chi*chi-1)*cos(phi3Val));
-            Double_t phimmVal = atan2(a1Val*sin(phi1Val)-a3Val*eta*sqrt(chi*chi-1)*sin(phi3Val),a1Val*cos(phi3Val)+a3Val*eta*sqrt(chi*chi-1)*cos(phi3Val));
+            //Double_t phi00Val = atan2(a1Val*sin(phi1Val)+a2Val*eta*(chi*chi-1)*sin(phi2Val),a1Val*cos(phi1Val)+a2Val*eta*(chi*chi-1)*cos(phi2Val)) + TMath::Pi();
+            //Double_t phippVal = atan2(a1Val*sin(phi1Val)+a3Val*eta*sqrt(chi*chi-1)*sin(phi3Val),a1Val*cos(phi3Val)-a3Val*eta*sqrt(chi*chi-1)*cos(phi3Val));
+            //Double_t phimmVal = atan2(a1Val*sin(phi1Val)-a3Val*eta*sqrt(chi*chi-1)*sin(phi3Val),a1Val*cos(phi3Val)+a3Val*eta*sqrt(chi*chi-1)*cos(phi3Val));
             
             Double_t betaValSquared = (1.-(pow(m1-m2,2)/pow(mX,2)))*(1.-(pow(m1+m2,2)/pow(mX,2)));
             Double_t betaVal = sqrt(betaValSquared);
@@ -188,21 +188,14 @@ Double_t RooXZsZs_5D::analyticalIntegral(Int_t code, const char* rangeName) cons
             Double_t term1F = 0;
             Double_t term1 = betaVal*term1Coeff*term2Coeff*(term1A+term1B+term1C+term1D+term1E+term1F);
             
-            //Double_t para0 = 5.169254e-01;
-            //Double_t para1 =-1.004152e-02;
-            //Double_t para2 = 3.543577e-04;
-            
-            //Double_t accp = para0 + para1*m2 + para2*m2*m2;
             Double_t accp = 1.;
-            //std::cout << "term1: " << term1 << "... coeff: " << (term1Coeff*term2Coeff) << std::endl;
+
             return term1*accp;
         }
         case 4:
         {
             // ENTER EXPRESSION IN TERMS OF VARIABLE ARGUMENTS HERE 
             //   const Double_t VEV = 246.;
-            Double_t sh1 = sqrt(1-h1*h1);
-            Double_t sh2 = sqrt(1-h2*h2);        
             
             // definition of helicity amplitudes
             Double_t chi = (mX*mX-m1*m1-m2*m2)/(2.*m2*m1);
@@ -219,9 +212,9 @@ Double_t RooXZsZs_5D::analyticalIntegral(Int_t code, const char* rangeName) cons
             Double_t f00Val = (a1Val*a1Val*chi*chi+pow(a2Val,2)*pow(eta,2)*(chi*chi-1.)*(chi*chi-1.)+2.*a1Val*a2Val*chi*(chi*chi-1)*eta*cos(phi1Val-phi2Val));
             Double_t fppVal = (a1Val*a1Val+pow(a3Val,2)*pow(eta,2)*(chi*chi-1)+2.*a1Val*a3Val*chi*sqrt(chi*chi-1)*eta*cos(phi1Val-phi3Val));
             Double_t fmmVal = (a1Val*a1Val+pow(a3Val,2)*pow(eta,2)*(chi*chi-1)+2.*a1Val*a3Val*chi*sqrt(chi*chi-1)*eta*cos(phi1Val-phi3Val));
-            Double_t phi00Val = atan2(a1Val*sin(phi1Val)+a2Val*eta*(chi*chi-1)*sin(phi2Val),a1Val*cos(phi1Val)+a2Val*eta*(chi*chi-1)*cos(phi2Val)) + TMath::Pi();
-            Double_t phippVal = atan2(a1Val*sin(phi1Val)+a3Val*eta*sqrt(chi*chi-1)*sin(phi3Val),a1Val*cos(phi3Val)-a3Val*eta*sqrt(chi*chi-1)*cos(phi3Val));
-            Double_t phimmVal = atan2(a1Val*sin(phi1Val)-a3Val*eta*sqrt(chi*chi-1)*sin(phi3Val),a1Val*cos(phi3Val)+a3Val*eta*sqrt(chi*chi-1)*cos(phi3Val));
+            //Double_t phi00Val = atan2(a1Val*sin(phi1Val)+a2Val*eta*(chi*chi-1)*sin(phi2Val),a1Val*cos(phi1Val)+a2Val*eta*(chi*chi-1)*cos(phi2Val)) + TMath::Pi();
+            //Double_t phippVal = atan2(a1Val*sin(phi1Val)+a3Val*eta*sqrt(chi*chi-1)*sin(phi3Val),a1Val*cos(phi3Val)-a3Val*eta*sqrt(chi*chi-1)*cos(phi3Val));
+            //Double_t phimmVal = atan2(a1Val*sin(phi1Val)-a3Val*eta*sqrt(chi*chi-1)*sin(phi3Val),a1Val*cos(phi3Val)+a3Val*eta*sqrt(chi*chi-1)*cos(phi3Val));
             
             Double_t betaValSquared = (1.-(pow(m1-m2,2)/pow(mX,2)))*(1.-(pow(m1+m2,2)/pow(mX,2)));
             Double_t betaVal = sqrt(betaValSquared);
@@ -239,21 +232,14 @@ Double_t RooXZsZs_5D::analyticalIntegral(Int_t code, const char* rangeName) cons
             Double_t term1F = 0;
             Double_t term1 = betaVal*term1Coeff*term2Coeff*(term1A+term1B+term1C+term1D+term1E+term1F);
             
-            //Double_t para0 = 5.169254e-01;
-            //Double_t para1 =-1.004152e-02;
-            //Double_t para2 = 3.543577e-04;
-            
-            //Double_t accp = para0 + para1*m2 + para2*m2*m2;
             Double_t accp = 1.;
-            //std::cout << "term1: " << term1 << "... coeff: " << (term1Coeff*term2Coeff) << std::endl;
+
             return term1*accp;
         }
         case 5:
         {
             // ENTER EXPRESSION IN TERMS OF VARIABLE ARGUMENTS HERE 
             //   const Double_t VEV = 246.;
-            Double_t sh1 = sqrt(1-h1*h1);
-            Double_t sh2 = sqrt(1-h2*h2);        
             
             // definition of helicity amplitudes
             Double_t chi = (mX*mX-m1*m1-m2*m2)/(2.*m2*m1);
@@ -290,21 +276,14 @@ Double_t RooXZsZs_5D::analyticalIntegral(Int_t code, const char* rangeName) cons
             Double_t term1F = (32*sqrt(fmmVal)*sqrt(fppVal)*cos(2*Phi - phimmVal + phippVal))/9.;
             Double_t term1 = betaVal*term1Coeff*term2Coeff*(term1A+term1B+term1C+term1D+term1E+term1F);
             
-            //Double_t para0 = 5.169254e-01;
-            //Double_t para1 =-1.004152e-02;
-            //Double_t para2 = 3.543577e-04;
-            
-            //Double_t accp = para0 + para1*m2 + para2*m2*m2;
             Double_t accp = 1.;
-            //std::cout << "term1: " << term1 << "... coeff: " << (term1Coeff*term2Coeff) << std::endl;
+
             return term1*accp;
         }
         case 6:
         {
             // ENTER EXPRESSION IN TERMS OF VARIABLE ARGUMENTS HERE 
             //   const Double_t VEV = 246.;
-            Double_t sh1 = sqrt(1-h1*h1);
-            Double_t sh2 = sqrt(1-h2*h2);        
             
             // definition of helicity amplitudes
             Double_t chi = (mX*mX-m1*m1-m2*m2)/(2.*m2*m1);
@@ -321,9 +300,9 @@ Double_t RooXZsZs_5D::analyticalIntegral(Int_t code, const char* rangeName) cons
             Double_t f00Val = (a1Val*a1Val*chi*chi+pow(a2Val,2)*pow(eta,2)*(chi*chi-1.)*(chi*chi-1.)+2.*a1Val*a2Val*chi*(chi*chi-1)*eta*cos(phi1Val-phi2Val));
             Double_t fppVal = (a1Val*a1Val+pow(a3Val,2)*pow(eta,2)*(chi*chi-1)+2.*a1Val*a3Val*chi*sqrt(chi*chi-1)*eta*cos(phi1Val-phi3Val));
             Double_t fmmVal = (a1Val*a1Val+pow(a3Val,2)*pow(eta,2)*(chi*chi-1)+2.*a1Val*a3Val*chi*sqrt(chi*chi-1)*eta*cos(phi1Val-phi3Val));
-            Double_t phi00Val = atan2(a1Val*sin(phi1Val)+a2Val*eta*(chi*chi-1)*sin(phi2Val),a1Val*cos(phi1Val)+a2Val*eta*(chi*chi-1)*cos(phi2Val)) + TMath::Pi();
-            Double_t phippVal = atan2(a1Val*sin(phi1Val)+a3Val*eta*sqrt(chi*chi-1)*sin(phi3Val),a1Val*cos(phi3Val)-a3Val*eta*sqrt(chi*chi-1)*cos(phi3Val));
-            Double_t phimmVal = atan2(a1Val*sin(phi1Val)-a3Val*eta*sqrt(chi*chi-1)*sin(phi3Val),a1Val*cos(phi3Val)+a3Val*eta*sqrt(chi*chi-1)*cos(phi3Val));
+            //Double_t phi00Val = atan2(a1Val*sin(phi1Val)+a2Val*eta*(chi*chi-1)*sin(phi2Val),a1Val*cos(phi1Val)+a2Val*eta*(chi*chi-1)*cos(phi2Val)) + TMath::Pi();
+            //Double_t phippVal = atan2(a1Val*sin(phi1Val)+a3Val*eta*sqrt(chi*chi-1)*sin(phi3Val),a1Val*cos(phi3Val)-a3Val*eta*sqrt(chi*chi-1)*cos(phi3Val));
+            //Double_t phimmVal = atan2(a1Val*sin(phi1Val)-a3Val*eta*sqrt(chi*chi-1)*sin(phi3Val),a1Val*cos(phi3Val)+a3Val*eta*sqrt(chi*chi-1)*cos(phi3Val));
             
             Double_t betaValSquared = (1.-(pow(m1-m2,2)/pow(mX,2)))*(1.-(pow(m1+m2,2)/pow(mX,2)));
             Double_t betaVal = sqrt(betaValSquared);
@@ -341,18 +320,11 @@ Double_t RooXZsZs_5D::analyticalIntegral(Int_t code, const char* rangeName) cons
             Double_t term1F = 0;
             Double_t term1 = betaVal*term1Coeff*term2Coeff*(term1A+term1B+term1C+term1D+term1E+term1F);
             
-            //Double_t para0 = 5.169254e-01;
-            //Double_t para1 =-1.004152e-02;
-            //Double_t para2 = 3.543577e-04;
-            
-            //Double_t accp = para0 + para1*m2 + para2*m2*m2;
             Double_t accp = 1.;
-            //std::cout << "term1: " << term1 << "... coeff: " << (term1Coeff*term2Coeff) << std::endl;
+
             return term1*accp;
         }
     }
     assert(0) ;
     return 0 ;
 }
-
-
